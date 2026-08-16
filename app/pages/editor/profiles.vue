@@ -9,6 +9,7 @@ interface PreviewEntry {
   color: string
   notes?: string
   action: 'add' | 'update'
+  included: boolean
 }
 
 const store = useProjectStore()
@@ -54,6 +55,7 @@ function analyze(): void {
       color: entry.color ?? existing?.color ?? PALETTE[index % PALETTE.length]!,
       notes: entry.notes ?? existing?.notes,
       action: existing ? 'update' : 'add',
+      included: true,
     }
   })
 }
@@ -65,6 +67,7 @@ function apply(): void {
   const indexByName = new Map(characters.map((character, index) => [character.name, index] as const))
 
   for (const entry of preview.value) {
+    if (!entry.included) continue
     const existingIndex = indexByName.get(entry.name)
     if (existingIndex !== undefined) {
       const current = characters[existingIndex]!
@@ -87,8 +90,9 @@ function apply(): void {
   router.push('/editor/characters')
 }
 
-const addCount = computed(() => (preview.value ?? []).filter((entry) => entry.action === 'add').length)
-const updateCount = computed(() => (preview.value ?? []).filter((entry) => entry.action === 'update').length)
+const addCount = computed(() => (preview.value ?? []).filter((entry) => entry.included && entry.action === 'add').length)
+const updateCount = computed(() => (preview.value ?? []).filter((entry) => entry.included && entry.action === 'update').length)
+const selectedCount = computed(() => (preview.value ?? []).filter((entry) => entry.included).length)
 </script>
 
 <template>
@@ -122,10 +126,17 @@ const updateCount = computed(() => (preview.value ?? []).filter((entry) => entry
       <section v-if="preview" class="panel">
         <h2>読み込みプレビュー</h2>
         <p class="import-preview-meta">
-          新規追加 {{ addCount }}人 / 既存を更新 {{ updateCount }}人
+          反映対象 {{ selectedCount }}人 (新規追加 {{ addCount }}人 / 既存を更新 {{ updateCount }}人)
+        </p>
+        <p class="hint">
+          汎用語(組織名・役職など)が誤ってキャラクターとして拾われた場合は
+          チェックを外してください。
         </p>
         <ul class="profile-preview-list">
-          <li v-for="entry in preview" :key="entry.name" class="profile-preview-item">
+          <li v-for="entry in preview" :key="entry.name" class="profile-preview-item" :class="{ 'profile-preview-item--excluded': !entry.included }">
+            <label class="profile-preview-check">
+              <input v-model="entry.included" type="checkbox">
+            </label>
             <span class="character-swatch" :style="{ background: entry.color }" />
             <div class="profile-preview-text">
               <span class="profile-preview-name">
@@ -138,7 +149,9 @@ const updateCount = computed(() => (preview.value ?? []).filter((entry) => entry
             </div>
           </li>
         </ul>
-        <button type="button" class="publish-button" @click="apply">この内容でキャラクター一覧を更新する</button>
+        <button type="button" class="publish-button" :disabled="selectedCount === 0" @click="apply">
+          この内容でキャラクター一覧を更新する
+        </button>
       </section>
     </div>
   </div>
@@ -161,6 +174,16 @@ const updateCount = computed(() => (preview.value ?? []).filter((entry) => entry
   background: #fbfaf6;
   border: 2px solid var(--pop-ink);
   border-radius: var(--pop-radius-sm);
+}
+
+.profile-preview-item--excluded {
+  opacity: 0.4;
+  background: #ede8dd;
+}
+
+.profile-preview-check {
+  display: flex;
+  align-items: center;
 }
 
 .profile-preview-text {
