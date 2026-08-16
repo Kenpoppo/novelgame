@@ -76,6 +76,49 @@ function moveBeatTo(index: number, target: 'top' | 'bottom'): void {
   else beats.push(beat)
 }
 
+// ── ドラッグ&ドロップによる並び替え ─────────────────────
+const dragFrom = ref<number | null>(null)
+const dragOver = ref<number | null>(null)
+
+function onDragStart(index: number, event: DragEvent): void {
+  dragFrom.value = index
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+    // Firefox 用: 何か文字列をセットしないとドラッグが開始されない
+    event.dataTransfer.setData('text/plain', String(index))
+  }
+}
+
+function onDragOver(index: number, event: DragEvent): void {
+  if (dragFrom.value === null || dragFrom.value === index) return
+  event.preventDefault()
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'move'
+  dragOver.value = index
+}
+
+function onDrop(index: number, event: DragEvent): void {
+  event.preventDefault()
+  if (dragFrom.value === null || dragFrom.value === index) {
+    dragFrom.value = null
+    dragOver.value = null
+    return
+  }
+  if (!store.project) return
+  const beats = store.project.beats
+  const [beat] = beats.splice(dragFrom.value, 1)
+  if (!beat) return
+  // 前方から後方への移動時、splice で削除した分だけ target が1つずれる
+  const target = dragFrom.value < index ? index - 1 : index
+  beats.splice(target, 0, beat)
+  dragFrom.value = null
+  dragOver.value = null
+}
+
+function onDragEnd(): void {
+  dragFrom.value = null
+  dragOver.value = null
+}
+
 function removeBeat(index: number): void {
   store.project?.beats.splice(index, 1)
 }
@@ -145,9 +188,15 @@ function addBeat(type: Beat['type']): void {
         :key="beat.id"
         :id="beatDomId(index)"
         class="beat"
-        :class="`beat-${beat.type}`"
+        :class="[`beat-${beat.type}`, { 'beat--drag-over': dragOver === index, 'beat--dragging': dragFrom === index }]"
+        draggable="true"
+        @dragstart="onDragStart(index, $event)"
+        @dragover="onDragOver(index, $event)"
+        @drop="onDrop(index, $event)"
+        @dragend="onDragEnd"
       >
         <div class="beat-controls">
+          <span class="beat-drag-handle" title="ドラッグして並び替え">⋮⋮</span>
           <span class="beat-index">#{{ index + 1 }}</span>
           <button type="button" :disabled="index === 0" title="1つ上へ" @click="moveBeat(index, -1)">▲</button>
           <button type="button" :disabled="index === (store.project?.beats.length ?? 0) - 1" title="1つ下へ" @click="moveBeat(index, 1)">▼</button>

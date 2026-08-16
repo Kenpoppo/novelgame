@@ -250,6 +250,27 @@
   color: var(--pop-green-dark);
 }
 
+.subpage-history-button {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 800;
+  font-family: inherit;
+  color: var(--pop-ink);
+  background: #fff;
+  border: 2px solid var(--pop-ink);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.subpage-history-button:hover:not(:disabled) {
+  background: var(--pop-yellow);
+}
+
+.subpage-history-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .subpage-body {
   max-width: 700px;
   margin: 0 auto;
@@ -611,6 +632,28 @@
   text-align: center;
   color: #8a7c6c;
   padding: 2px 0;
+}
+
+.beat-drag-handle {
+  font-size: 14px;
+  font-weight: 900;
+  text-align: center;
+  color: #8a7c6c;
+  cursor: grab;
+  user-select: none;
+}
+
+.beat-drag-handle:active {
+  cursor: grabbing;
+}
+
+.beat--dragging {
+  opacity: 0.4;
+}
+
+.beat--drag-over {
+  outline: 3px dashed var(--pop-blue-dark);
+  outline-offset: 2px;
 }
 
 .beat-count {
