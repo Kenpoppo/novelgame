@@ -11,15 +11,30 @@ const props = defineProps<{
 }>()
 
 const started = ref(false)
+const paused = ref(false)
 const playback = usePlayback(props.script, props.tts)
+const router = useRouter()
 
 function handleStart(): void {
   started.value = true
   playback.start()
 }
 
+function togglePause(): void {
+  paused.value = !paused.value
+}
+
+function goHome(): void {
+  router.push(props.homeTo ?? '/')
+}
+
 function handleKeydown(event: KeyboardEvent): void {
   if (!started.value) return
+  if (event.code === 'Escape') {
+    togglePause()
+    return
+  }
+  if (paused.value) return
   if (event.code === 'Space' || event.code === 'Enter' || event.code === 'ArrowRight') {
     playback.advance()
     return
@@ -44,6 +59,13 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
     <NuxtLink :to="homeTo ?? '/'" class="stage-home-button" aria-label="ホームへ戻る" title="ホームへ戻る">
       🏠
     </NuxtLink>
+    <button
+      type="button"
+      class="stage-menu-button"
+      aria-label="メニュー(Esc)"
+      title="メニュー(Esc)"
+      @click="togglePause"
+    >☰</button>
     <button
       type="button"
       class="stage-nav-button stage-nav-button--prev"
@@ -92,5 +114,18 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
       :text="playback.text.value"
       @advance="playback.advance"
     />
+
+    <div v-if="paused" class="stage-pause-overlay" @click.self="togglePause">
+      <div class="stage-pause-panel">
+        <h2>一時停止</h2>
+        <button type="button" class="publish-button" @click="togglePause">続ける (Esc)</button>
+        <button type="button" class="io-button" @click="goHome">
+          {{ homeTo === '/editor' ? '編集画面へ戻る' : 'ホーム(ギャラリー)へ戻る' }}
+        </button>
+        <p class="stage-pause-hint">
+          Space/→: 進む &nbsp; ←: 戻る &nbsp; Esc: メニュー
+        </p>
+      </div>
+    </div>
   </div>
 </template>
