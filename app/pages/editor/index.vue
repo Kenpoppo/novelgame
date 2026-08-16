@@ -86,6 +86,11 @@ async function publish(): Promise<void> {
         <span>ストーリー</span>
         <span class="count">{{ store.project.beats.length }}ビート</span>
       </NuxtLink>
+      <NuxtLink to="/editor/branches" class="editor-menu-tile editor-menu-tile--branches">
+        <span class="icon">🌿</span>
+        <span>ストーリー展開</span>
+        <span class="count">選択肢・分岐を作る</span>
+      </NuxtLink>
       <NuxtLink to="/editor/import" class="editor-menu-tile editor-menu-tile--import">
         <span class="icon">📥</span>
         <span>台本を読み込む</span>

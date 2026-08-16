@@ -15,6 +15,7 @@ Webサービスへ移行した。
   │   ├─ /editor/characters … キャラクター設定(独立ページ)
   │   ├─ /editor/audio       … 音源(BGM/SE)設定(独立ページ)
   │   ├─ /editor/story       … ストーリー編集(独立ページ)
+  │   ├─ /editor/branches    … ストーリー展開(選択肢・分岐)エディタ
   │   ├─ /editor/import      … 既存台本の読み込み(AI解析 or ヒューリスティック解析)
   │   └─ /editor/all         … 詳細設定(上記すべてを1画面にまとめた一覧)
   ├─ /play/local           … 編集中プロジェクトのローカルプレビュー

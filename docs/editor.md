@@ -19,6 +19,7 @@ interface CharacterAsset {
   name: string
   color?: string
   imageDataUrl?: string // アップロード画像(任意)
+  voiceDataUrl?: string // サンプル/テーマ音声(任意、CharacterPanelから試聴可)
 }
 
 interface AudioCue {

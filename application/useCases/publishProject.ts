@@ -27,9 +27,16 @@ export async function publishProject(
     ...project,
     characters: await Promise.all(
       project.characters.map(async (character) => {
-        if (!character.imageDataUrl?.startsWith('data:')) return character
-        const url = await assetStorage.upload(ownerId, character.imageDataUrl, `characters/${character.id}`)
-        return { ...character, imageDataUrl: url }
+        let next = character
+        if (character.imageDataUrl?.startsWith('data:')) {
+          const url = await assetStorage.upload(ownerId, character.imageDataUrl, `characters/${character.id}`)
+          next = { ...next, imageDataUrl: url }
+        }
+        if (character.voiceDataUrl?.startsWith('data:')) {
+          const url = await assetStorage.upload(ownerId, character.voiceDataUrl, `characters/${character.id}-voice`)
+          next = { ...next, voiceDataUrl: url }
+        }
+        return next
       }),
     ),
     audio: await Promise.all(

@@ -3,6 +3,8 @@ export interface CharacterAsset {
   name: string
   color?: string
   imageDataUrl?: string
+  // 各キャラクターに紐づく1つのサンプル/テーマ音声(data URL or storage URL)。
+  voiceDataUrl?: string
 }
 
 export interface AudioCue {

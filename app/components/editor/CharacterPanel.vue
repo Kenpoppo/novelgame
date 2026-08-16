@@ -7,12 +7,21 @@ const store = useProjectStore()
 const name = ref('')
 const color = ref('#8ec5ff')
 const imageFile = ref<File | null>(null)
+const voiceFile = ref<File | null>(null)
 const saveToLibrary = ref(false)
 const selectedLibraryId = ref('')
+
+// キャラごとの再生中Audioを保持し、多重再生や前の再生の停止を管理する
+const activeVoiceAudio = ref<HTMLAudioElement | null>(null)
 
 function onImageChange(event: Event): void {
   const input = event.target as HTMLInputElement
   imageFile.value = input.files?.[0] ?? null
+}
+
+function onVoiceChange(event: Event): void {
+  const input = event.target as HTMLInputElement
+  voiceFile.value = input.files?.[0] ?? null
 }
 
 function readFileAsDataUrl(file: File): Promise<string> {
@@ -28,11 +37,13 @@ async function addCharacter(): Promise<void> {
   if (!store.project || !name.value.trim()) return
 
   const imageDataUrl = imageFile.value ? await readFileAsDataUrl(imageFile.value) : undefined
+  const voiceDataUrl = voiceFile.value ? await readFileAsDataUrl(voiceFile.value) : undefined
   const character: CharacterAsset = {
     id: crypto.randomUUID(),
     name: name.value.trim(),
     color: color.value,
     imageDataUrl,
+    voiceDataUrl,
   }
 
   if (saveToLibrary.value) {
@@ -44,7 +55,50 @@ async function addCharacter(): Promise<void> {
   name.value = ''
   color.value = '#8ec5ff'
   imageFile.value = null
+  voiceFile.value = null
   saveToLibrary.value = false
+}
+
+async function setImage(character: CharacterAsset, event: Event): Promise<void> {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  character.imageDataUrl = await readFileAsDataUrl(file)
+  input.value = ''
+}
+
+async function setVoice(character: CharacterAsset, event: Event): Promise<void> {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  character.voiceDataUrl = await readFileAsDataUrl(file)
+  input.value = ''
+}
+
+function clearImage(character: CharacterAsset): void {
+  character.imageDataUrl = undefined
+}
+
+function clearVoice(character: CharacterAsset): void {
+  character.voiceDataUrl = undefined
+  if (activeVoiceAudio.value) {
+    activeVoiceAudio.value.pause()
+    activeVoiceAudio.value = null
+  }
+}
+
+function playVoice(character: CharacterAsset): void {
+  if (!character.voiceDataUrl) return
+  if (activeVoiceAudio.value) {
+    activeVoiceAudio.value.pause()
+    activeVoiceAudio.value = null
+  }
+  const audio = new Audio(character.voiceDataUrl)
+  activeVoiceAudio.value = audio
+  audio.addEventListener('ended', () => {
+    if (activeVoiceAudio.value === audio) activeVoiceAudio.value = null
+  })
+  void audio.play()
 }
 
 function removeCharacter(id: string): void {
@@ -63,6 +117,13 @@ async function deleteFromLibrary(id: string): Promise<void> {
   await indexedDbProjectRepository.deleteLibraryCharacter(id)
   await store.refreshLibrary()
 }
+
+onUnmounted(() => {
+  if (activeVoiceAudio.value) {
+    activeVoiceAudio.value.pause()
+    activeVoiceAudio.value = null
+  }
+})
 </script>
 
 <template>
@@ -74,6 +135,37 @@ async function deleteFromLibrary(id: string): Promise<void> {
         <img v-if="character.imageDataUrl" class="character-thumb" :src="character.imageDataUrl" alt="">
         <span class="character-swatch" :style="{ background: character.color ?? '#8ec5ff' }" />
         <span class="character-name">{{ character.name }}</span>
+
+        <div class="character-asset-actions">
+          <label class="character-asset-button">
+            {{ character.imageDataUrl ? '画像を変更' : '画像を設定' }}
+            <input type="file" accept="image/*" hidden @change="setImage(character, $event)">
+          </label>
+          <button
+            v-if="character.imageDataUrl"
+            type="button"
+            class="character-asset-clear"
+            @click="clearImage(character)"
+          >画像を外す</button>
+
+          <label class="character-asset-button">
+            {{ character.voiceDataUrl ? 'ボイス変更' : 'ボイス設定' }}
+            <input type="file" accept="audio/*" hidden @change="setVoice(character, $event)">
+          </label>
+          <button
+            v-if="character.voiceDataUrl"
+            type="button"
+            class="character-asset-play"
+            @click="playVoice(character)"
+          >▶ 試聴</button>
+          <button
+            v-if="character.voiceDataUrl"
+            type="button"
+            class="character-asset-clear"
+            @click="clearVoice(character)"
+          >ボイスを外す</button>
+        </div>
+
         <button type="button" @click="removeCharacter(character.id)">削除</button>
       </li>
     </ul>
@@ -93,7 +185,12 @@ async function deleteFromLibrary(id: string): Promise<void> {
     <form class="character-form" @submit.prevent="addCharacter">
       <input v-model="name" type="text" placeholder="表示名" required>
       <input v-model="color" type="color">
-      <input type="file" accept="image/*" @change="onImageChange">
+      <label class="character-form-file">画像
+        <input type="file" accept="image/*" @change="onImageChange">
+      </label>
+      <label class="character-form-file">ボイス
+        <input type="file" accept="audio/*" @change="onVoiceChange">
+      </label>
       <label><input v-model="saveToLibrary" type="checkbox"> ライブラリにも保存</label>
       <button type="submit">新規作成</button>
     </form>
