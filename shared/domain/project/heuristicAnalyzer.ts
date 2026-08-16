@@ -64,15 +64,6 @@ function resolveCanonicalName(name: string, knownNames: ReadonlySet<string>): st
   }
 }
 
-/**
- * ビート本文に「意味のある文字」(かな/カナ/漢字/英数字)が1文字でも
- * 含まれているかを判定する。純粋な句読点・省略記号(「……。」など)の
- * ビートを除外するために使う。
- */
-function hasMeaningfulContent(text: string): boolean {
-  return /[\p{L}\p{N}]/u.test(text)
-}
-
 export function analyzeScriptHeuristically(text: string): ScriptAnalysis {
   // 区切り記号のみの行(___ / ⸻ / — / ― など)はビート化せず読み飛ばす。
   // 台本上のシーン区切りとして書かれていることが多く、そのままビートにすると
@@ -199,19 +190,14 @@ export function analyzeScriptHeuristically(text: string): ScriptAnalysis {
   // 頻度フィルタ + 集団ラベル除外: 名寄せ後も2回以上出現しない名前は誤検出
   // (見出しや章タイトルなど)とみなし地の文へ格下げする。個人を指さない集団
   // ラベル(「全員」等)は出現回数に関わらずキャラクター扱いから外す。
-  const filteredBeats = beats
-    .map((beat) => {
-      if (!beat.speaker) return { speaker: null, text: beat.text }
+  const finalBeats = beats.map((beat) => {
+    if (!beat.speaker) return { speaker: null, text: beat.text }
 
-      const canonical = canonicalByRawName.get(beat.speaker)!
-      if (NON_PERSON_LABELS.has(canonical)) return { speaker: null, text: beat.text }
-      const isReliable = (speakerCounts.get(canonical) ?? 0) >= 2
-      return isReliable ? { speaker: canonical, text: beat.text } : { speaker: null, text: beat.text }
-    })
-    // 記号・句読点・省略記号だけのビートは意味のある本文がないため削除する。
-    // (「……。」「・・・・」「———」など、セリフに含めても白紙同然の行が多い)
-    .filter((beat) => hasMeaningfulContent(beat.text))
-  const finalBeats = filteredBeats
+    const canonical = canonicalByRawName.get(beat.speaker)!
+    if (NON_PERSON_LABELS.has(canonical)) return { speaker: null, text: beat.text }
+    const isReliable = (speakerCounts.get(canonical) ?? 0) >= 2
+    return isReliable ? { speaker: canonical, text: beat.text } : { speaker: null, text: beat.text }
+  })
 
   const characterNames = Array.from(new Set(finalBeats.filter((beat) => beat.speaker !== null).map((beat) => beat.speaker!)))
 
