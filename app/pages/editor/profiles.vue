@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { parseProfileTextWithDiagnostics } from '#shared/domain/project/profileImport'
+import { parseProfileTextWithDiagnostics, PROFILE_IMPORT_VERSION } from '#shared/domain/project/profileImport'
 import type { CharacterAsset } from '#shared/domain/project/types'
 
 const PALETTE = ['#4fc3f7', '#f48fb1', '#aed581', '#ffb74d', '#ba68c8', '#4db6ac', '#7986cb', '#ff8a65']
@@ -39,7 +39,7 @@ function analyze(): void {
   preview.value = null
 
   const { entries, skipped } = parseProfileTextWithDiagnostics(text.value)
-  console.info(`[プロフィール解析] 検出 ${entries.length}件 / スキップ ${skipped.length}件`)
+  console.info(`[プロフィール解析 v=${PROFILE_IMPORT_VERSION}] 検出 ${entries.length}件 / スキップ ${skipped.length}件`)
   if (skipped.length > 0) {
     console.table(skipped)
   }

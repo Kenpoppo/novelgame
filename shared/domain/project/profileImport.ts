@@ -26,6 +26,9 @@ export interface ProfileParseDiagnostics {
   skipped: { block: string; name: string; reason: string }[]
 }
 
+/** バンドルされている実装のバージョン識別子(HMR キャッシュ確認用)。 */
+export const PROFILE_IMPORT_VERSION = '2026-08-17-line-based-split'
+
 const KEY_NAME = /^(?:名前|Name)\s*[:：]\s*(.+)$/i
 const KEY_COLOR = /^(?:色|Color)\s*[:：]\s*(#?[0-9a-f]{3,8})\s*$/i
 const KEY_NOTES = /^(?:プロフィール|人物設定|説明|Profile|Description|Note|Notes)\s*[:：]\s*(.*)$/i
@@ -63,6 +66,31 @@ function normalizeColor(raw: string | undefined): string | undefined {
 }
 
 /**
+ * 行単位で走査し、trim後に空になる行を「ブロック区切り」として扱う。
+ * split(/\r?\n\s*\r?\n/) は環境やパターンによって挙動が揺れる場合が
+ * あったため、より予測可能な単純ループ方式に置き換えている。
+ */
+function splitIntoBlocks(input: string): string[] {
+  const rawLines = input.split(/\r?\n/)
+  const blocks: string[] = []
+  let current: string[] = []
+
+  for (const rawLine of rawLines) {
+    if (rawLine.trim().length === 0) {
+      if (current.length > 0) {
+        blocks.push(current.join('\n'))
+        current = []
+      }
+      continue
+    }
+    current.push(rawLine)
+  }
+  if (current.length > 0) blocks.push(current.join('\n'))
+
+  return blocks
+}
+
+/**
  * 与えられたテキストをキャラクタープロフィールのリストへ変換する。
  * JSON として解釈できるならまずそれを試し、失敗した場合は空行区切りブロックの
  * 自然文形式として解釈する。
@@ -96,7 +124,7 @@ export function parseProfileTextWithDiagnostics(input: string): ProfileParseDiag
     }
   }
 
-  const blocks = trimmed.split(/\r?\n\s*\r?\n/)
+  const blocks = splitIntoBlocks(trimmed)
   const entries: ProfileEntry[] = []
   const skipped: { block: string; name: string; reason: string }[] = []
 
