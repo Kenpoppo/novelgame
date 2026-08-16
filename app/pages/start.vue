@@ -4,6 +4,7 @@ import {
   analysisToProjectFragments,
   analyzeScriptHeuristically,
   dslResultToAnalysis,
+  mergeProfilesIntoCharacters,
 } from '#shared/domain/project/scriptImport'
 import { parseProfileText } from '#shared/domain/project/profileImport'
 import { createEmptyProject } from '#shared/domain/project/types'
@@ -42,6 +43,8 @@ const importError = ref<string | null>(null)
 const importPreview = ref<{ title?: string; characters: CharacterAsset[]; beats: Beat[]; usedAi: boolean } | null>(null)
 // 台本モードで解析したが「プロフィールっぽい」と判定した時のヒント。
 const profileSuggestion = ref<{ count: number } | null>(null)
+// 台本モードで解析した際、プロフィールを混合統合できた人数(統合完了メッセージ用)。
+const mergedProfileCount = ref(0)
 
 // プロフィール読み込みルート用の状態
 const profileText = ref('')
@@ -134,12 +137,16 @@ async function analyzeScript(): Promise<void> {
   importError.value = null
   importPreview.value = null
   profileSuggestion.value = null
+  mergedProfileCount.value = 0
 
   // タイトル抽出: 最初の非空行をタイトルとして扱う
   const lines = scriptText.value.split(/\r?\n/)
   const titleLineIndex = lines.findIndex((line) => line.trim().length > 0)
   const firstLineTitle = titleLineIndex >= 0 ? lines[titleLineIndex]!.trim() : ''
   const bodyText = titleLineIndex >= 0 ? lines.slice(titleLineIndex + 1).join('\n') : scriptText.value
+
+  // 全文に対してプロフィール解析も走らせる。台本と混在していれば人物設定を統合する。
+  const profileEntries = parseProfileText(scriptText.value)
 
   try {
     // まずDSL(自前フォーマット)を試す
@@ -149,6 +156,9 @@ async function analyzeScript(): Promise<void> {
     ).length
     if (namedDialogueCount >= 2) {
       const fragments = analysisToProjectFragments(dslResultToAnalysis(parsed))
+      const before = fragments.characters.length
+      fragments.characters = mergeProfilesIntoCharacters(fragments.characters, profileEntries)
+      mergedProfileCount.value = fragments.characters.length - before
       importPreview.value = { ...fragments, title: firstLineTitle || fragments.title, usedAi: false }
       return
     }
@@ -164,23 +174,33 @@ async function analyzeScript(): Promise<void> {
         characters: result.analysis.characters.map((c) => ({ name: c.name, color: c.color ?? undefined })),
         beats: result.analysis.beats,
       })
+      const before = fragments.characters.length
+      fragments.characters = mergeProfilesIntoCharacters(fragments.characters, profileEntries)
+      mergedProfileCount.value = fragments.characters.length - before
       importPreview.value = { ...fragments, title: firstLineTitle || fragments.title, usedAi: true }
     } else {
       // ヒューリスティックにフォールバック
       const fragments = analysisToProjectFragments(analyzeScriptHeuristically(bodyText))
+      const before = fragments.characters.length
+      fragments.characters = mergeProfilesIntoCharacters(fragments.characters, profileEntries)
+      mergedProfileCount.value = fragments.characters.length - before
       importPreview.value = { ...fragments, title: firstLineTitle || fragments.title, usedAi: false }
     }
 
     // 台本として解析したがキャラが少なく、プロフィール形式として読める場合はヒント。
     // 「セリフ「」がほぼ含まれない登場人物リスト」を投げ入れた時のフォロー。
-    if (importPreview.value && importPreview.value.characters.length < 2) {
-      const profileEntries = parseProfileText(scriptText.value)
-      if (profileEntries.length >= 3) {
-        profileSuggestion.value = { count: profileEntries.length }
-      }
+    if (
+      importPreview.value &&
+      importPreview.value.beats.filter((b) => b.type === 'dialogue' && (b as { characterId: string | null }).characterId).length < 2 &&
+      profileEntries.length >= 3
+    ) {
+      profileSuggestion.value = { count: profileEntries.length }
     }
   } catch {
     const fragments = analysisToProjectFragments(analyzeScriptHeuristically(bodyText))
+    const before = fragments.characters.length
+    fragments.characters = mergeProfilesIntoCharacters(fragments.characters, profileEntries)
+    mergedProfileCount.value = fragments.characters.length - before
     importPreview.value = { ...fragments, title: firstLineTitle || fragments.title, usedAi: false }
   } finally {
     analyzing.value = false
@@ -313,6 +333,9 @@ function backTo(target: Step): void {
         <p v-if="importPreview.title" class="wizard-preview-title">タイトル: <strong>{{ importPreview.title }}</strong></p>
         <p class="wizard-preview-meta">
           キャラ {{ importPreview.characters.length }}人 / セリフ {{ importPreview.beats.length }}件を検出しました。
+        </p>
+        <p v-if="mergedProfileCount > 0" class="wizard-preview-mergeinfo">
+          🪪 台本内の「登場人物リスト」から{{ mergedProfileCount }}人の人物設定を統合しました。
         </p>
         <button type="button" class="wizard-primary" @click="applyImport">この内容で作成する →</button>
       </section>
@@ -686,6 +709,17 @@ function backTo(target: Step): void {
   margin: 0;
   font-size: 13px;
   font-weight: 600;
+}
+
+.wizard-preview-mergeinfo {
+  margin: 0;
+  padding: 6px 10px;
+  background: #fff8dd;
+  border: 2px solid var(--pop-yellow-dark);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--pop-ink);
 }
 
 .wizard-suggestion {

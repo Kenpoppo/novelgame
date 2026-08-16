@@ -1,6 +1,7 @@
 import type { Instruction, ParsedScript } from '../types'
 import { createId } from './types'
 import type { Beat, CharacterAsset } from './types'
+import type { ProfileEntry } from './profileImport'
 
 const PALETTE = ['#4fc3f7', '#f48fb1', '#aed581', '#ffb74d', '#ba68c8', '#4db6ac', '#7986cb', '#ff8a65']
 
@@ -64,3 +65,52 @@ export function dslResultToAnalysis(parsed: ParsedScript): ScriptAnalysis {
  * ルールベース解析ライブラリ(複数の書式パターンを頻度フィルタ付きで検出する)。
  */
 export { analyzeScriptHeuristically } from './heuristicAnalyzer'
+
+/**
+ * 台本解析で検出したキャラクター一覧に、別途プロフィール解析で得た人物設定を
+ * マージする。同一台本ファイルの中に「登場人物リスト」+「本編セリフ」が混在
+ * している場合に、両方の情報(名前+notes+セリフ)を1つのキャラに集約する。
+ *
+ * マッチング規則:
+ *   - 完全一致: 「ゆうき」== 「ゆうき」
+ *   - 前方一致(4文字以内の差): 「ゆうき」⊂「ゆうき警部」→ 同一人物とみなす
+ *     (プロフィール側で肩書きあり、台本側で肩書きなしの正規化に対応)
+ *   - どちらにも合致しないプロフィールは、新規キャラとして追加する
+ */
+export function mergeProfilesIntoCharacters(
+  scriptCharacters: CharacterAsset[],
+  profiles: ProfileEntry[],
+): CharacterAsset[] {
+  if (profiles.length === 0) return scriptCharacters
+
+  const merged = scriptCharacters.map((c) => ({ ...c }))
+  const usedProfiles = new Set<number>()
+
+  for (const c of merged) {
+    const matchIndex = profiles.findIndex((p, i) => {
+      if (usedProfiles.has(i)) return false
+      if (p.name === c.name) return true
+      if (p.name.startsWith(c.name) && p.name.length - c.name.length <= 4) return true
+      if (c.name.startsWith(p.name) && c.name.length - p.name.length <= 4) return true
+      return false
+    })
+    if (matchIndex < 0) continue
+    usedProfiles.add(matchIndex)
+    const p = profiles[matchIndex]!
+    c.notes = p.notes ?? c.notes
+    c.color = c.color ?? p.color
+  }
+
+  // プロフィールにしか登場しないキャラは新規追加(セリフはまだ無いが登録しておく)
+  for (const [i, p] of profiles.entries()) {
+    if (usedProfiles.has(i)) continue
+    merged.push({
+      id: createId(),
+      name: p.name,
+      color: p.color ?? PALETTE[merged.length % PALETTE.length],
+      notes: p.notes,
+    })
+  }
+
+  return merged
+}

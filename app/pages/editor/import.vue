@@ -4,7 +4,9 @@ import {
   analysisToProjectFragments,
   analyzeScriptHeuristically,
   dslResultToAnalysis,
+  mergeProfilesIntoCharacters,
 } from '#shared/domain/project/scriptImport'
+import { parseProfileText } from '#shared/domain/project/profileImport'
 import type { Beat, CharacterAsset } from '#shared/domain/project/types'
 
 interface AnalyzeResponse {
@@ -18,6 +20,7 @@ const text = ref('')
 const analyzing = ref(false)
 const errorMessage = ref<string | null>(null)
 const preview = ref<{ title?: string; characters: CharacterAsset[]; beats: Beat[]; usedAi: boolean } | null>(null)
+const mergedProfileCount = ref(0)
 const router = useRouter()
 
 onMounted(() => {
@@ -41,6 +44,7 @@ async function analyze(): Promise<void> {
   analyzing.value = true
   errorMessage.value = null
   preview.value = null
+  mergedProfileCount.value = 0
 
   // 最初の非空行をタイトルとして扱い、それ以降を本文として解析する。
   // タイトル行を本文から除外することで、解析結果のセリフ・地の文に混入しない。
@@ -48,6 +52,19 @@ async function analyze(): Promise<void> {
   const titleLineIndex = lines.findIndex((line) => line.trim().length > 0)
   const firstLineTitle = titleLineIndex >= 0 ? lines[titleLineIndex]!.trim() : ''
   const bodyText = titleLineIndex >= 0 ? lines.slice(titleLineIndex + 1).join('\n') : text.value
+
+  // 全文に対してプロフィール解析も走らせる。台本と混在していれば人物設定を統合する。
+  const profileEntries = parseProfileText(text.value)
+
+  const mergeAndSet = (
+    fragments: { title?: string; characters: CharacterAsset[]; beats: Beat[] },
+    usedAi: boolean,
+  ) => {
+    const before = fragments.characters.length
+    fragments.characters = mergeProfilesIntoCharacters(fragments.characters, profileEntries)
+    mergedProfileCount.value = fragments.characters.length - before
+    preview.value = { ...fragments, title: firstLineTitle || fragments.title, usedAi }
+  }
 
   try {
     // 1. 自前のテキスト台本DSLに沿っているか、まず試す(高精度)。
@@ -58,8 +75,7 @@ async function analyze(): Promise<void> {
       (instruction) => instruction.type === 'dialogue' && instruction.speaker !== null,
     ).length
     if (namedDialogueCount >= 2) {
-      const fragments = analysisToProjectFragments(dslResultToAnalysis(parsed))
-      preview.value = { ...fragments, title: firstLineTitle || fragments.title, usedAi: false }
+      mergeAndSet(analysisToProjectFragments(dslResultToAnalysis(parsed)), false)
       return
     }
 
@@ -70,24 +86,24 @@ async function analyze(): Promise<void> {
     })
 
     if (result.ok && result.analysis) {
-      const fragments = analysisToProjectFragments({
-        title: result.analysis.title ?? undefined,
-        characters: result.analysis.characters.map((character) => ({
-          name: character.name,
-          color: character.color ?? undefined,
-        })),
-        beats: result.analysis.beats,
-      })
-      preview.value = { ...fragments, title: firstLineTitle || fragments.title, usedAi: true }
+      mergeAndSet(
+        analysisToProjectFragments({
+          title: result.analysis.title ?? undefined,
+          characters: result.analysis.characters.map((character) => ({
+            name: character.name,
+            color: character.color ?? undefined,
+          })),
+          beats: result.analysis.beats,
+        }),
+        true,
+      )
       return
     }
 
     // 3. AIが使えない/失敗した場合はヒューリスティック解析にフォールバック
-    const fragments = analysisToProjectFragments(analyzeScriptHeuristically(bodyText))
-    preview.value = { ...fragments, title: firstLineTitle || fragments.title, usedAi: false }
+    mergeAndSet(analysisToProjectFragments(analyzeScriptHeuristically(bodyText)), false)
   } catch {
-    const fragments = analysisToProjectFragments(analyzeScriptHeuristically(bodyText))
-    preview.value = { ...fragments, title: firstLineTitle || fragments.title, usedAi: false }
+    mergeAndSet(analysisToProjectFragments(analyzeScriptHeuristically(bodyText)), false)
   } finally {
     analyzing.value = false
   }
@@ -140,6 +156,9 @@ function apply(): void {
         </p>
         <p class="import-preview-meta">
           キャラクター {{ preview.characters.length }}人 / セリフ・ナレーション {{ preview.beats.length }}件を検出しました。
+        </p>
+        <p v-if="mergedProfileCount > 0" class="import-preview-mergeinfo">
+          🪪 台本内の「登場人物リスト」から{{ mergedProfileCount }}人の人物設定を統合しました。
         </p>
         <ul class="character-list">
           <li v-for="character in preview.characters" :key="character.id" class="character-item">
