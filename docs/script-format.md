@@ -5,12 +5,11 @@
 
 現在の一次的な作成手段はブラウザGUIエディタ(`/editor`、詳細は
 [editor.md](./editor.md))だが、このテキスト形式も引き続き有効。
-上級者が直接テキストで書きたい場合の代替経路であり、また
-`shared/domain/project/sample-project.ts` がエディタ初回起動時のシード生成に
-このパーサーを使っている(サンプル本文は
-[shared/domain/scripts/sample-script.ts](../shared/domain/scripts/sample-script.ts)
-に文字列定数として持つ。`?raw` インポートはNitro(サーバー)側のビルドで
-解決できなかったため採用していない)。
+上級者が直接テキストで書きたい場合の代替経路として、また
+`/editor/import` の自前DSL経路の入力形式として使う
+(以前はエディタ初回起動時のシードにも使っていたが、初期表示に
+サンプルのタイトル・セリフが混じらないように空プロジェクトへ切り替えた。
+詳細は [editor.md](./editor.md) の「初回シード」節)。
 
 行単位で解釈される。空行は無視される。
 

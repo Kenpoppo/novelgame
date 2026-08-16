@@ -1,5 +1,5 @@
 import { indexedDbProjectRepository } from '../../infrastructure/local/indexedDbProjectRepository'
-import { createSampleProject } from '#shared/domain/project/sample-project'
+import { createEmptyProject } from '#shared/domain/project/types'
 import type { CharacterAsset, Project } from '#shared/domain/project/types'
 
 export const useProjectStore = defineStore('project', () => {
@@ -10,7 +10,7 @@ export const useProjectStore = defineStore('project', () => {
   async function load(): Promise<void> {
     if (loaded.value) return
     const existing = await indexedDbProjectRepository.getCurrentProject()
-    project.value = existing ?? createSampleProject()
+    project.value = existing ?? createEmptyProject()
     if (!existing && project.value) {
       await indexedDbProjectRepository.saveCurrentProject(project.value)
     }

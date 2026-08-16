@@ -110,12 +110,11 @@ type Beat =
 ローカルの下書きはこのタイミングまで他ユーザーから見えない。詳細な
 セットアップは [setup-supabase.md](./setup-supabase.md)。
 
-## 初回シード(`shared/domain/project/sample-project.ts`)
+## 初回シード
 
-保存済みプロジェクトが無いとき(初回のローカル利用時)は空白のエディタでは
-なく、既存のテキスト台本(`shared/domain/scripts/sample-script.ts` の
-`sampleScriptText` 文字列定数)を `parseScript()` した結果を `Project` 形式へ
-変換したものを表示する。これにより taro/hana のサンプルが「エディタでどう
-組み立てるか」の実例になる(以前は `sample.script.txt` を `?raw` インポート
-していたが、Nitro側のビルドで解決できなかったため文字列定数に変更した。
-詳細は [decisions.md](./decisions.md) と [script-format.md](./script-format.md))。
+保存済みプロジェクトが無いとき(初回のローカル利用時)は、
+`createEmptyProject()`(`shared/domain/project/types.ts`)で生成した
+空のプロジェクト(タイトル「無題のストーリー」、キャラ/音源/ビートすべて空)
+をエディタに読み込ませる。以前は taro/hana のサンプル台本をシードしていたが、
+初期表示にサンプルのタイトルやセリフが混じるのを避けたいため、
+空のエディタで開始する方針に変更した(詳細は [decisions.md](./decisions.md))。
