@@ -1,15 +1,19 @@
 import type { Instruction, ParsedScript } from './types'
 
+export interface DialoguePayload {
+  characterId: string | null
+  name: string | null
+  color?: string
+  imageDataUrl?: string
+  text: string
+}
+
 export interface VMCallbacks {
-  onDialogue(
-    speakerName: string | null,
-    color: string | undefined,
-    imageDataUrl: string | undefined,
-    text: string,
-  ): void
+  onDialogue(payload: DialoguePayload): void
   onChoice(options: { text: string; target: string }[]): void
   onBgm(src: string | null): void
   onSe(src: string): void
+  onBackground(src: string | null): void
   onEnd(): void
 }
 
@@ -62,7 +66,13 @@ export class ScriptVM {
         const image = instruction.useAltImage && character?.imageAltDataUrl
           ? character.imageAltDataUrl
           : character?.imageDataUrl
-        this.callbacks.onDialogue(character?.name ?? null, character?.color, image, instruction.text)
+        this.callbacks.onDialogue({
+          characterId: character?.id ?? null,
+          name: character?.name ?? null,
+          color: character?.color,
+          imageDataUrl: image,
+          text: instruction.text,
+        })
         break
       }
       case 'jump': {
@@ -82,6 +92,12 @@ export class ScriptVM {
       }
       case 'se': {
         this.callbacks.onSe(instruction.src)
+        this.pointer++
+        this.run()
+        break
+      }
+      case 'background': {
+        this.callbacks.onBackground(instruction.src)
         this.pointer++
         this.run()
         break

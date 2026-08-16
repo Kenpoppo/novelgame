@@ -27,15 +27,37 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
 
 <template>
   <TitleScreen v-if="!started" :title="title" @start="handleStart" />
-  <div v-else class="stage">
-    <div class="stage-portrait">
-      <img
-        v-if="playback.speakerImage.value"
-        :key="playback.speakerImage.value"
-        class="stage-portrait-image"
-        :src="playback.speakerImage.value"
-        alt=""
+  <div
+    v-else
+    class="stage"
+    :style="playback.backgroundImage.value ? { backgroundImage: `url(${playback.backgroundImage.value})` } : {}"
+    :class="{ 'stage--has-bg': !!playback.backgroundImage.value }"
+  >
+    <div class="stage-cast">
+      <div
+        class="stage-slot stage-slot--left"
+        :class="{ 'stage-slot--active': playback.activeSide.value === 'left', 'stage-slot--inactive': playback.activeSide.value === 'right' }"
       >
+        <img
+          v-if="playback.leftSlot.value"
+          :key="playback.leftSlot.value.imageDataUrl"
+          class="stage-portrait-image"
+          :src="playback.leftSlot.value.imageDataUrl"
+          alt=""
+        >
+      </div>
+      <div
+        class="stage-slot stage-slot--right"
+        :class="{ 'stage-slot--active': playback.activeSide.value === 'right', 'stage-slot--inactive': playback.activeSide.value === 'left' }"
+      >
+        <img
+          v-if="playback.rightSlot.value"
+          :key="playback.rightSlot.value.imageDataUrl"
+          class="stage-portrait-image stage-portrait-image--flipped"
+          :src="playback.rightSlot.value.imageDataUrl"
+          alt=""
+        >
+      </div>
     </div>
     <ChoiceOverlay v-if="playback.choices.value" :options="playback.choices.value" @choose="playback.choose" />
     <DialogueBox

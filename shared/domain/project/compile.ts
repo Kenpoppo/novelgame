@@ -13,6 +13,7 @@ export function compileProject(project: Project): CompileResult {
   }
 
   const audioById = new Map(project.audio.map((cue) => [cue.id, cue]))
+  const backgroundById = new Map((project.backgrounds ?? []).map((bg) => [bg.id, bg]))
 
   const seenLabels = new Set<string>()
   const items: (Instruction | { type: 'label'; name: string })[] = []
@@ -71,6 +72,21 @@ export function compileProject(project: Project): CompileResult {
         }
         if (cue.fileDataUrl) {
           items.push({ type: 'se', src: cue.fileDataUrl })
+        }
+        break
+      }
+      case 'background': {
+        if (beat.backgroundId === null) {
+          items.push({ type: 'background', src: null })
+          break
+        }
+        const bg = backgroundById.get(beat.backgroundId)
+        if (!bg) {
+          errors.push('背景ビートが参照している背景がライブラリに見つかりません')
+          break
+        }
+        if (bg.imageDataUrl) {
+          items.push({ type: 'background', src: bg.imageDataUrl })
         }
         break
       }

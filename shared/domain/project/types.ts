@@ -19,6 +19,12 @@ export interface AudioCue {
   sourceNote?: string
 }
 
+export interface BackgroundAsset {
+  id: string
+  label: string
+  imageDataUrl?: string
+}
+
 /**
  * エディタ上でのみ存在する「ビート」。label は再生用データへコンパイルする際に
  * resolveLabels() で取り除かれ、labels マップへ解決される。
@@ -30,11 +36,13 @@ export type Beat =
   | { id: string; type: 'choice'; options: { text: string; target: string }[] }
   | { id: string; type: 'bgm'; audioId: string | null }
   | { id: string; type: 'se'; audioId: string }
+  | { id: string; type: 'background'; backgroundId: string | null }
 
 export interface Project {
   title: string
   characters: CharacterAsset[]
   audio: AudioCue[]
+  backgrounds: BackgroundAsset[]
   beats: Beat[]
 }
 
@@ -43,5 +51,5 @@ export function createId(): string {
 }
 
 export function createEmptyProject(title = '無題のストーリー'): Project {
-  return { title, characters: [], audio: [], beats: [] }
+  return { title, characters: [], audio: [], backgrounds: [], beats: [] }
 }

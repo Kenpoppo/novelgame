@@ -50,6 +50,13 @@ export async function publishProject(
         return { ...cue, fileDataUrl: url }
       }),
     ),
+    backgrounds: await Promise.all(
+      (project.backgrounds ?? []).map(async (bg) => {
+        if (!bg.imageDataUrl?.startsWith('data:')) return bg
+        const url = await assetStorage.upload(ownerId, bg.imageDataUrl, `backgrounds/${bg.id}`)
+        return { ...bg, imageDataUrl: url }
+      }),
+    ),
   }
 
   const id = await cloudRepository.save(ownerId, materialized, existingId)

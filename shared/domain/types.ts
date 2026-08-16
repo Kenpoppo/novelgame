@@ -14,6 +14,7 @@ export type Instruction =
   | { type: 'choice'; options: { text: string; target: string }[] }
   | { type: 'bgm'; src: string | null }
   | { type: 'se'; src: string }
+  | { type: 'background'; src: string | null }
 
 export interface ParsedScript {
   instructions: Instruction[]

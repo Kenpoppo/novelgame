@@ -59,6 +59,9 @@ function addBeat(type: Beat['type']): void {
     case 'se':
       beat = { id, type, audioId: project.audio.find((cue) => cue.kind === 'se')?.id ?? '' }
       break
+    case 'background':
+      beat = { id, type, backgroundId: project.backgrounds?.[0]?.id ?? null }
+      break
   }
 
   project.beats.push(beat)
@@ -145,6 +148,19 @@ function addBeat(type: Beat['type']): void {
               </option>
             </select>
           </template>
+
+          <template v-else-if="beat.type === 'background'">
+            <select v-model="beat.backgroundId">
+              <option :value="null">(既定/背景なし)</option>
+              <option
+                v-for="bg in store.project?.backgrounds ?? []"
+                :key="bg.id"
+                :value="bg.id"
+              >
+                {{ bg.label }}
+              </option>
+            </select>
+          </template>
         </div>
       </li>
     </ol>
@@ -156,6 +172,7 @@ function addBeat(type: Beat['type']): void {
       <button type="button" @click="addBeat('choice')">+ 選択肢</button>
       <button type="button" @click="addBeat('bgm')">+ BGM</button>
       <button type="button" @click="addBeat('se')">+ SE</button>
+      <button type="button" @click="addBeat('background')">+ 背景</button>
     </div>
   </section>
 </template>

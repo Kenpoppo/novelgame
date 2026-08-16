@@ -3,38 +3,77 @@
   width: 100%;
   height: 100svh;
   background: linear-gradient(180deg, #7ec8ff 0%, #bfe6ff 45%, #fff0c9 100%);
+  background-size: cover;
+  background-position: center;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   overflow: hidden;
 }
 
-/* 立ち絵表示: 画面中央上寄り(下端をダイアログ上、上端はビューポート上部から
-   少しの余白)に配置し、画像の縦横比を保ったまま最大サイズで表示する。 */
-.stage-portrait {
+.stage--has-bg {
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+/* 左右2スロットの対面レイアウト。しゃべっている側は活性化、
+   もう一方は薄く暗く落とす。上から8割(胴まで)を表示するため、
+   縦方向はスロット内で下寄せ + 下から20%を overflow-hidden で隠す。 */
+.stage-cast {
   position: absolute;
   left: 0;
   right: 0;
-  top: 4vh;
-  bottom: 200px;
+  top: 3vh;
+  bottom: 220px;
   display: flex;
+  justify-content: space-between;
   align-items: flex-end;
-  justify-content: center;
+  padding: 0 4vw;
   pointer-events: none;
   z-index: 0;
 }
 
+.stage-slot {
+  flex: 1 1 0;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: hidden;
+  transition: filter 0.25s ease, transform 0.25s ease, opacity 0.25s ease;
+}
+
+.stage-slot--left { justify-content: flex-start; padding-left: 2vw; }
+.stage-slot--right { justify-content: flex-end; padding-right: 2vw; }
+
+.stage-slot--inactive {
+  filter: brightness(0.6) saturate(0.7);
+  opacity: 0.85;
+  transform: translateY(4px) scale(0.97);
+}
+
+.stage-slot--active {
+  filter: brightness(1);
+  transform: translateY(0);
+}
+
 .stage-portrait-image {
-  max-width: min(60vw, 480px);
-  max-height: 100%;
+  max-width: min(45vw, 480px);
+  /* 縦方向は 125% まで許容し、下端がスロット外に出るように配置。
+     stage-slot 側の overflow: hidden で下20%が自然に切れる → 胴まで表示。 */
+  max-height: 125%;
   object-fit: contain;
-  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.25));
-  /* 発言が切り替わるたびに `:key` で再マウントされ、フェードで登場する */
+  object-position: bottom center;
+  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.3));
   animation: portrait-fade-in 0.25s ease-out;
 }
 
+.stage-portrait-image--flipped {
+  transform: scaleX(-1);
+}
+
 @keyframes portrait-fade-in {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -42,8 +81,8 @@
   position: relative;
   z-index: 1;
   margin: 0 24px 24px;
-  padding: 20px 28px;
-  min-height: 120px;
+  padding: 28px 36px;
+  min-height: 200px;
   background: var(--pop-card);
   border: var(--pop-border-w) solid var(--pop-ink);
   border-radius: var(--pop-radius-lg);
@@ -65,18 +104,18 @@
 
 .name-box {
   display: inline-block;
-  margin-bottom: 10px;
-  padding: 4px 18px;
+  margin-bottom: 14px;
+  padding: 6px 22px;
   border-radius: 999px;
   background: var(--pop-blue);
   border: 2px solid var(--pop-ink);
   color: #fff;
   font-weight: 800;
-  font-size: 15px;
+  font-size: 20px;
 }
 
 .text-box {
-  font-size: 19px;
+  font-size: 26px;
   font-weight: 500;
   line-height: 1.7;
   white-space: pre-wrap;

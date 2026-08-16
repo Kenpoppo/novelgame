@@ -24,6 +24,7 @@ onMounted(() => {
         <aside class="all-settings-sidebar">
           <CharacterPanel />
           <AudioPanel />
+          <BackgroundPanel />
         </aside>
         <StoryPanel />
       </div>

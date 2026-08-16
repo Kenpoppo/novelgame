@@ -11,7 +11,14 @@ interface Project {
   title: string
   characters: CharacterAsset[]
   audio: AudioCue[]
+  backgrounds: BackgroundAsset[]
   beats: Beat[]
+}
+
+interface BackgroundAsset {
+  id: string
+  label: string             // 例:「事務所・昼」「ラジオ局」
+  imageDataUrl?: string      // 背景画像(任意)
 }
 
 interface CharacterAsset {
@@ -39,6 +46,7 @@ type Beat =
   | { id: string; type: 'choice'; options: { text: string; target: string }[] }
   | { id: string; type: 'bgm'; audioId: string | null } // null = 停止
   | { id: string; type: 'se'; audioId: string }
+  | { id: string; type: 'background'; backgroundId: string | null } // null = 既定/背景なし
 ```
 
 `Project` はキャラクター画像・音源ファイルの data URL を含めて自己完結
