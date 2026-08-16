@@ -21,5 +21,5 @@ const script = computed<ParsedScript | null>(() => {
       </div>
     </div>
   </div>
-  <StagePlayer v-else-if="script" :title="data.project.title" :script="script" />
+  <StagePlayer v-else-if="script" :title="data.project.title" :script="script" :tts="data.project.tts" />
 </template>

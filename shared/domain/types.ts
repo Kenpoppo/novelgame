@@ -6,6 +6,10 @@ export interface CharacterDef {
   // 状況に応じた第2の立ち絵(表情違い/ポーズ違いなど)。dialogue命令の
   // useAltImage=true のときに優先して表示する。
   imageAltDataUrl?: string
+  voiceDataUrl?: string
+  ttsVoice?: string
+  ttsRate?: number
+  ttsPitch?: number
 }
 
 export type Instruction =

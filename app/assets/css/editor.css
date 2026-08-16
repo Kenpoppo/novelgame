@@ -319,6 +319,24 @@
   resize: vertical;
 }
 
+.character-tts {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.character-tts-label {
+  color: var(--pop-ink);
+}
+
+.character-tts-select {
+  min-width: 200px;
+}
+
 .character-asset-actions {
   display: flex;
   align-items: center;

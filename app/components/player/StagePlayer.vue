@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import type { ParsedScript } from '#shared/domain/types'
+import type { TtsConfig } from '#shared/domain/project/types'
 
 const props = defineProps<{
   title: string
   script: ParsedScript
+  tts?: TtsConfig
 }>()
 
 const started = ref(false)
-const playback = usePlayback(props.script)
+const playback = usePlayback(props.script, props.tts)
 
 function handleStart(): void {
   started.value = true

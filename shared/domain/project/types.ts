@@ -7,6 +7,12 @@ export interface CharacterAsset {
   imageAltDataUrl?: string
   // 各キャラクターに紐づく1つのサンプル/テーマ音声(data URL or storage URL)。
   voiceDataUrl?: string
+  // TTS(読み上げ)用のボイス識別子:
+  //   - Web Speech の場合は voice の name
+  //   - VOICEVOX の場合は speaker(style) id を文字列化したもの
+  ttsVoice?: string
+  ttsRate?: number
+  ttsPitch?: number
   // 人物設定(一人称・口調・背景など)のフリーテキスト。編集画面での参考用。
   notes?: string
 }
@@ -23,6 +29,16 @@ export interface BackgroundAsset {
   id: string
   label: string
   imageDataUrl?: string
+}
+
+export interface TtsConfig {
+  enabled: boolean
+  engine: 'webspeech' | 'voicevox'
+  voicevoxUrl?: string
+  narrateNarration?: boolean
+  narrationVoice?: string
+  narrationRate?: number
+  narrationPitch?: number
 }
 
 /**
@@ -57,6 +73,7 @@ export interface Project {
   audio: AudioCue[]
   backgrounds: BackgroundAsset[]
   beats: Beat[]
+  tts?: TtsConfig
 }
 
 export function createId(): string {

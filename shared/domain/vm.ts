@@ -5,6 +5,10 @@ export interface DialoguePayload {
   name: string | null
   color?: string
   imageDataUrl?: string
+  voiceDataUrl?: string
+  ttsVoice?: string
+  ttsRate?: number
+  ttsPitch?: number
   text: string
 }
 
@@ -88,6 +92,10 @@ export class ScriptVM {
           name: character?.name ?? null,
           color: character?.color,
           imageDataUrl: image,
+          voiceDataUrl: character?.voiceDataUrl,
+          ttsVoice: character?.ttsVoice,
+          ttsRate: character?.ttsRate,
+          ttsPitch: character?.ttsPitch,
           text: instruction.text,
         })
         break

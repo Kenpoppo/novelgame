@@ -30,5 +30,5 @@ onMounted(async () => {
       </div>
     </div>
   </div>
-  <StagePlayer v-else-if="script && store.project" :title="store.project.title" :script="script" />
+  <StagePlayer v-else-if="script && store.project" :title="store.project.title" :script="script" :tts="store.project.tts" />
 </template>

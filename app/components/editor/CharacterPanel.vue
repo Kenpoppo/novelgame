@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { indexedDbProjectRepository } from '../../../infrastructure/local/indexedDbProjectRepository'
+import { VoicevoxTts } from '../../../infrastructure/tts/voicevoxTts'
+import { WebSpeechTts } from '../../../infrastructure/tts/webspeechTts'
+import type { TtsService, TtsVoice } from '../../../infrastructure/tts/ttsService'
 import type { CharacterAsset } from '#shared/domain/project/types'
 
 const store = useProjectStore()
@@ -13,6 +16,47 @@ const selectedLibraryId = ref('')
 
 // キャラごとの再生中Audioを保持し、多重再生や前の再生の停止を管理する
 const activeVoiceAudio = ref<HTMLAudioElement | null>(null)
+
+// TTS 音声の一覧(プロジェクト tts 設定から取得)
+const ttsVoices = ref<TtsVoice[]>([])
+
+async function refreshTtsVoices(): Promise<void> {
+  if (!store.project?.tts?.enabled) {
+    ttsVoices.value = []
+    return
+  }
+  const service: TtsService =
+    store.project.tts.engine === 'voicevox'
+      ? new VoicevoxTts(store.project.tts.voicevoxUrl ?? 'http://localhost:50021')
+      : new WebSpeechTts()
+  try {
+    ttsVoices.value = await service.listVoices()
+  } catch {
+    ttsVoices.value = []
+  }
+}
+
+onMounted(() => {
+  void refreshTtsVoices()
+})
+
+watch(
+  () => [store.project?.tts?.enabled, store.project?.tts?.engine, store.project?.tts?.voicevoxUrl],
+  () => void refreshTtsVoices(),
+)
+
+async function testTtsVoice(character: CharacterAsset): Promise<void> {
+  if (!store.project?.tts) return
+  const service: TtsService =
+    store.project.tts.engine === 'voicevox'
+      ? new VoicevoxTts(store.project.tts.voicevoxUrl ?? 'http://localhost:50021')
+      : new WebSpeechTts()
+  await service.speak(`こんにちは、${character.name}です。`, {
+    voice: character.ttsVoice,
+    rate: character.ttsRate,
+    pitch: character.ttsPitch,
+  })
+}
 
 function onImageChange(event: Event): void {
   const input = event.target as HTMLInputElement
@@ -199,6 +243,14 @@ onUnmounted(() => {
           rows="2"
           placeholder="人物設定・口調・背景などのメモ(任意)"
         />
+        <div v-if="store.project?.tts?.enabled" class="character-tts">
+          <label class="character-tts-label">読み上げ音声</label>
+          <select v-model="character.ttsVoice" class="character-tts-select">
+            <option :value="undefined">(規定)</option>
+            <option v-for="voice in ttsVoices" :key="voice.id" :value="voice.id">{{ voice.name }}</option>
+          </select>
+          <button type="button" class="character-asset-play" @click="testTtsVoice(character)">▶ 試聴</button>
+        </div>
       </li>
     </ul>
 

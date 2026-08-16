@@ -25,6 +25,7 @@ onMounted(() => {
           <CharacterPanel />
           <AudioPanel />
           <BackgroundPanel />
+          <TtsPanel />
         </aside>
         <StoryPanel />
       </div>

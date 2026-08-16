@@ -1,13 +1,17 @@
 import { HowlerAudioService } from '../../infrastructure/audio/howlerAudioService'
+import { VoicevoxTts } from '../../infrastructure/tts/voicevoxTts'
+import { WebSpeechTts } from '../../infrastructure/tts/webspeechTts'
+import type { TtsService } from '../../infrastructure/tts/ttsService'
 import { ScriptVM } from '#shared/domain/vm'
 import type { ParsedScript } from '#shared/domain/types'
+import type { TtsConfig } from '#shared/domain/project/types'
 
 interface PortraitSlot {
   characterId: string
   imageDataUrl: string
 }
 
-export function usePlayback(script: ParsedScript) {
+export function usePlayback(script: ParsedScript, ttsConfig?: TtsConfig) {
   const speakerName = ref<string | null>(null)
   const speakerColor = ref<string | undefined>(undefined)
   const text = ref('')
@@ -21,12 +25,49 @@ export function usePlayback(script: ParsedScript) {
 
   const audio = new HowlerAudioService()
 
+  // 発話中のボイスファイル(Audio)。次の発話で停止する。
+  let voiceAudio: HTMLAudioElement | null = null
+
+  const tts: TtsService | null = ttsConfig?.enabled
+    ? ttsConfig.engine === 'voicevox'
+      ? new VoicevoxTts(ttsConfig.voicevoxUrl ?? 'http://localhost:50021')
+      : new WebSpeechTts()
+    : null
+
+  function stopVoice(): void {
+    if (voiceAudio) {
+      voiceAudio.pause()
+      voiceAudio.currentTime = 0
+      voiceAudio = null
+    }
+    tts?.stop()
+  }
+
   const vm = new ScriptVM(script, {
     onDialogue(payload) {
       choices.value = null
       speakerName.value = payload.name
       speakerColor.value = payload.color
       text.value = payload.text
+
+      // 発話再生: 既存ボイスファイル > TTS > 何もしない
+      stopVoice()
+      if (payload.voiceDataUrl) {
+        const a = new Audio(payload.voiceDataUrl)
+        voiceAudio = a
+        void a.play().catch(() => {
+          // 自動再生ブロック等は無視
+        })
+      } else if (tts) {
+        const shouldSpeak = payload.characterId !== null || ttsConfig?.narrateNarration !== false
+        if (shouldSpeak && payload.text.trim().length > 0) {
+          void tts.speak(payload.text, {
+            voice: payload.ttsVoice ?? (payload.characterId === null ? ttsConfig?.narrationVoice : undefined),
+            rate: payload.ttsRate ?? (payload.characterId === null ? ttsConfig?.narrationRate : undefined),
+            pitch: payload.ttsPitch ?? (payload.characterId === null ? ttsConfig?.narrationPitch : undefined),
+          })
+        }
+      }
 
       if (!payload.characterId || !payload.imageDataUrl) {
         // 地の文や画像未設定のキャラは、既存の立ち絵はそのままで話者だけ更新。
@@ -99,7 +140,10 @@ export function usePlayback(script: ParsedScript) {
     vm.choose(target)
   }
 
-  onUnmounted(() => audio.stopAll())
+  onUnmounted(() => {
+    audio.stopAll()
+    stopVoice()
+  })
 
   return {
     speakerName,
