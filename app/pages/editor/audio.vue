@@ -8,7 +8,11 @@ onMounted(() => {
 
 <template>
   <div v-if="store.project" class="editor">
-    <SubPageHeader title="音源設定(BGM/SE)" />
+    <SubPageHeader title="音源設定(BGM/SE)">
+      <template #actions>
+        <PreviewButton />
+      </template>
+    </SubPageHeader>
     <div class="subpage-body">
       <AudioPanel />
     </div>

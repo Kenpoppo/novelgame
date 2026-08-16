@@ -6,6 +6,8 @@ const props = defineProps<{
   title: string
   script: ParsedScript
   tts?: TtsConfig
+  // ホームボタン押下時の遷移先。プレビュー中(/play/local)は /editor に戻すため。
+  homeTo?: string
 }>()
 
 const started = ref(false)
@@ -39,7 +41,7 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
     :style="playback.backgroundImage.value ? { backgroundImage: `url(${playback.backgroundImage.value})` } : {}"
     :class="{ 'stage--has-bg': !!playback.backgroundImage.value }"
   >
-    <NuxtLink to="/" class="stage-home-button" aria-label="ホームへ戻る" title="ホームへ戻る">
+    <NuxtLink :to="homeTo ?? '/'" class="stage-home-button" aria-label="ホームへ戻る" title="ホームへ戻る">
       🏠
     </NuxtLink>
     <button

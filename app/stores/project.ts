@@ -6,6 +6,9 @@ export const useProjectStore = defineStore('project', () => {
   const project = ref<Project | null>(null)
   const libraryCharacters = ref<CharacterAsset[]>([])
   const loaded = ref(false)
+  // 自動保存の状態: idle=待機/saving=保存中/saved=直近で保存完了
+  const saveState = ref<'idle' | 'saving' | 'saved'>('idle')
+  const lastSavedAt = ref<Date | null>(null)
 
   async function load(): Promise<void> {
     if (loaded.value) return
@@ -20,7 +23,14 @@ export const useProjectStore = defineStore('project', () => {
 
   async function persist(): Promise<void> {
     if (!project.value) return
-    await indexedDbProjectRepository.saveCurrentProject(project.value)
+    saveState.value = 'saving'
+    try {
+      await indexedDbProjectRepository.saveCurrentProject(project.value)
+      lastSavedAt.value = new Date()
+      saveState.value = 'saved'
+    } catch {
+      saveState.value = 'idle'
+    }
   }
 
   async function refreshLibrary(): Promise<void> {
@@ -29,5 +39,5 @@ export const useProjectStore = defineStore('project', () => {
 
   watch(project, () => void persist(), { deep: true })
 
-  return { project, libraryCharacters, loaded, load, refreshLibrary, saveNow: persist }
+  return { project, libraryCharacters, loaded, saveState, lastSavedAt, load, refreshLibrary, saveNow: persist }
 })

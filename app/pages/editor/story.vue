@@ -8,7 +8,11 @@ onMounted(() => {
 
 <template>
   <div v-if="store.project" class="editor">
-    <SubPageHeader title="ストーリー編集" />
+    <SubPageHeader title="ストーリー編集">
+      <template #actions>
+        <PreviewButton />
+      </template>
+    </SubPageHeader>
     <div class="subpage-body subpage-body--wide">
       <StoryPanel />
     </div>

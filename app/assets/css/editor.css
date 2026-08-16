@@ -232,6 +232,24 @@
   align-items: center;
 }
 
+.subpage-save-status {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 2px solid var(--pop-ink);
+}
+
+.subpage-save-status--saving {
+  background: #fff4d6;
+  color: var(--pop-red-dark);
+}
+
+.subpage-save-status--saved {
+  background: #dff5df;
+  color: var(--pop-green-dark);
+}
+
 .subpage-body {
   max-width: 700px;
   margin: 0 auto;
@@ -580,6 +598,55 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.beat-index {
+  font-size: 10px;
+  font-weight: 800;
+  text-align: center;
+  color: #8a7c6c;
+  padding: 2px 0;
+}
+
+.beat-count {
+  font-size: 13px;
+  font-weight: 600;
+  color: #8a7c6c;
+  margin-left: 6px;
+}
+
+.label-jumper {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  background: #fff8dd;
+  border: 2px dashed var(--pop-ink);
+  border-radius: var(--pop-radius-sm);
+}
+
+.label-jumper-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--pop-ink);
+}
+
+.label-jumper-chip {
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  background: #fff;
+  border: 2px solid var(--pop-ink);
+  border-radius: 999px;
+  color: var(--pop-ink);
+  cursor: pointer;
+}
+
+.label-jumper-chip:hover {
+  background: var(--pop-yellow);
 }
 
 .beat-controls button {

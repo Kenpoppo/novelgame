@@ -7,6 +7,22 @@ const labelNames = computed(() =>
   (store.project?.beats ?? []).filter((beat) => beat.type === 'label').map((beat) => beat.name),
 )
 
+/** ラベル位置ジャンプ用: 各ラベルの beats 内 index と名前を返す。 */
+const labelJumpTargets = computed(() =>
+  (store.project?.beats ?? [])
+    .map((beat, index) => ({ beat, index }))
+    .filter(({ beat }) => beat.type === 'label') as { beat: Extract<Beat, { type: 'label' }>; index: number }[],
+)
+
+function jumpToBeat(index: number): void {
+  const el = document.getElementById(beatDomId(index))
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+}
+
+function beatDomId(index: number): string {
+  return `beat-${index}`
+}
+
 function characterHasAlt(characterId: string): boolean {
   const character = store.project?.characters.find((c) => c.id === characterId)
   return !!character?.imageAltDataUrl
@@ -30,6 +46,15 @@ function moveBeat(index: number, delta: number): void {
   const [beat] = beats.splice(index, 1)
   if (!beat) return
   beats.splice(target, 0, beat)
+}
+
+function moveBeatTo(index: number, target: 'top' | 'bottom'): void {
+  if (!store.project) return
+  const beats = store.project.beats
+  const [beat] = beats.splice(index, 1)
+  if (!beat) return
+  if (target === 'top') beats.unshift(beat)
+  else beats.push(beat)
 }
 
 function removeBeat(index: number): void {
@@ -80,13 +105,35 @@ function addBeat(type: Beat['type']): void {
 
 <template>
   <section class="panel">
-    <h2>ストーリー</h2>
+    <h2>ストーリー <span class="beat-count">({{ store.project?.beats.length ?? 0 }} ビート)</span></h2>
+
+    <nav v-if="labelJumpTargets.length > 0" class="label-jumper">
+      <span class="label-jumper-title">📍 ラベルへ移動:</span>
+      <button
+        v-for="target in labelJumpTargets"
+        :key="target.beat.id"
+        type="button"
+        class="label-jumper-chip"
+        @click="jumpToBeat(target.index)"
+      >
+        {{ target.beat.name }}
+      </button>
+    </nav>
 
     <ol class="beat-list">
-      <li v-for="(beat, index) in store.project?.beats ?? []" :key="beat.id" class="beat" :class="`beat-${beat.type}`">
+      <li
+        v-for="(beat, index) in store.project?.beats ?? []"
+        :key="beat.id"
+        :id="beatDomId(index)"
+        class="beat"
+        :class="`beat-${beat.type}`"
+      >
         <div class="beat-controls">
-          <button type="button" :disabled="index === 0" @click="moveBeat(index, -1)">▲</button>
-          <button type="button" :disabled="index === (store.project?.beats.length ?? 0) - 1" @click="moveBeat(index, 1)">▼</button>
+          <span class="beat-index">#{{ index + 1 }}</span>
+          <button type="button" :disabled="index === 0" title="1つ上へ" @click="moveBeat(index, -1)">▲</button>
+          <button type="button" :disabled="index === (store.project?.beats.length ?? 0) - 1" title="1つ下へ" @click="moveBeat(index, 1)">▼</button>
+          <button type="button" :disabled="index === 0" title="先頭へ" @click="moveBeatTo(index, 'top')">⇈</button>
+          <button type="button" :disabled="index === (store.project?.beats.length ?? 0) - 1" title="末尾へ" @click="moveBeatTo(index, 'bottom')">⇊</button>
           <button type="button" @click="removeBeat(index)">削除</button>
         </div>
 
