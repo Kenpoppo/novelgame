@@ -1,0 +1,751 @@
+.editor {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #eaf7ff 0%, #fff8ec 100%);
+  color: var(--pop-ink);
+}
+
+.editor-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 24px;
+  border-bottom: var(--pop-border-w) solid var(--pop-ink);
+  position: sticky;
+  top: 0;
+  background: var(--pop-card);
+  z-index: 1;
+}
+
+.title-input {
+  flex: 1;
+  font-size: 20px;
+  font-weight: 800;
+  font-family: inherit;
+  padding: 10px 16px;
+  color: var(--pop-ink);
+  background: #fff;
+  border: var(--pop-border-w) solid var(--pop-ink);
+  border-radius: var(--pop-radius-sm);
+}
+
+.editor-header a {
+  font-weight: 700;
+  color: var(--pop-blue-dark);
+  text-decoration: none;
+}
+
+.editor-header a:hover {
+  text-decoration: underline;
+}
+
+.play-button,
+.publish-button {
+  padding: 10px 24px;
+  font-size: 15px;
+  font-weight: 800;
+  font-family: inherit;
+  color: #fff;
+  border: var(--pop-border-w) solid var(--pop-ink);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease;
+}
+
+.play-button {
+  background: var(--pop-green);
+  box-shadow: 0 4px 0 var(--pop-green-dark);
+}
+
+.play-button:hover {
+  background: #62dd85;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 var(--pop-green-dark);
+}
+
+.play-button:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--pop-green-dark);
+}
+
+.publish-button {
+  background: var(--pop-purple);
+  box-shadow: 0 4px 0 var(--pop-purple-dark);
+}
+
+.publish-button:hover {
+  background: #c197ff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 var(--pop-purple-dark);
+}
+
+.publish-button:active,
+.publish-button:disabled {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--pop-purple-dark);
+}
+
+.error-banner {
+  margin: 16px 24px 0;
+  padding: 12px 18px;
+  background: #fff0f0;
+  border: var(--pop-border-w) solid var(--pop-red);
+  border-radius: var(--pop-radius-sm);
+  color: var(--pop-red-dark);
+  font-weight: 600;
+}
+
+.error-banner ul {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+
+/* --- メイン画面のメニュー(キャラクター/音源/ストーリーへの入口) --- */
+
+.editor-menu {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 40px 24px 60px;
+}
+
+.editor-menu-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 36px 20px;
+  background: var(--pop-card);
+  border: var(--pop-border-w) solid var(--pop-ink);
+  border-radius: var(--pop-radius-lg);
+  box-shadow: 0 6px 0 var(--pop-shadow);
+  color: var(--pop-ink);
+  text-decoration: none;
+  font-weight: 800;
+  font-size: 18px;
+  text-align: center;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.editor-menu-tile .icon {
+  font-size: 42px;
+  line-height: 1;
+}
+
+.editor-menu-tile .count {
+  font-size: 13px;
+  font-weight: 700;
+  color: #8a7c6c;
+}
+
+.editor-menu-tile:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 9px 0 var(--pop-shadow);
+}
+
+.editor-menu-tile:active {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 var(--pop-shadow);
+}
+
+.editor-menu-tile--characters {
+  border-color: var(--pop-blue-dark);
+}
+
+.editor-menu-tile--audio {
+  border-color: var(--pop-green-dark);
+}
+
+.editor-menu-tile--story {
+  border-color: var(--pop-red-dark);
+}
+
+.editor-menu-tile--import {
+  border-color: var(--pop-purple-dark);
+}
+
+.editor-menu-tile--all {
+  border-color: var(--pop-pink);
+}
+
+/* --- 設定画面(キャラクター/音源/ストーリー)の共通ヘッダー --- */
+
+.subpage-header {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 14px 24px;
+  border-bottom: var(--pop-border-w) solid var(--pop-ink);
+  background: var(--pop-card);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.subpage-header .back-link {
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--pop-blue-dark);
+  text-decoration: none;
+}
+
+.subpage-header .back-link:hover {
+  text-decoration: underline;
+}
+
+.subpage-header h1 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.subpage-body {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.subpage-body--wide {
+  max-width: 900px;
+}
+
+.panel {
+  background: var(--pop-card);
+  border: var(--pop-border-w) solid var(--pop-ink);
+  border-radius: var(--pop-radius-lg);
+  box-shadow: 0 5px 0 var(--pop-shadow);
+  padding: 18px;
+}
+
+.panel h2 {
+  margin: 0 0 12px;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.hint {
+  font-size: 13px;
+  color: #6b5f52;
+  margin: 0 0 12px;
+  line-height: 1.6;
+}
+
+.hint a {
+  color: var(--pop-blue-dark);
+  font-weight: 700;
+}
+
+/* --- キャラクター / 音源ライブラリの一覧 --- */
+
+.character-list,
+.library-list,
+.audio-list {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.character-item,
+.audio-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #fbfaf6;
+  border: 2px solid var(--pop-ink);
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.character-thumb {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--pop-ink);
+}
+
+.character-swatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--pop-ink);
+  flex-shrink: 0;
+}
+
+.character-name,
+.audio-label {
+  flex: 1;
+}
+
+.audio-kind {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--pop-blue);
+  color: #fff;
+}
+
+.audio-status {
+  font-size: 12px;
+  color: #8a7c6c;
+}
+
+.character-item button,
+.audio-item button {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  background: #fff;
+  border: 2px solid var(--pop-ink);
+  border-radius: 999px;
+  color: inherit;
+  cursor: pointer;
+}
+
+.character-item button:hover,
+.audio-item button:hover {
+  background: var(--pop-red);
+  color: #fff;
+}
+
+.library-picker {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.library-picker select {
+  flex: 1;
+}
+
+.library-manage {
+  margin-top: 16px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* --- フォーム共通 --- */
+
+.character-form,
+.audio-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 2px dashed #d8cdbd;
+}
+
+.character-form label {
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.editor input[type='text'],
+.editor input[type='color'],
+.editor input[type='file'],
+.editor select,
+.editor textarea {
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--pop-ink);
+  background: #fff;
+  border: 2px solid var(--pop-ink);
+  border-radius: var(--pop-radius-sm);
+  padding: 7px 10px;
+}
+
+.editor textarea {
+  resize: vertical;
+  width: 100%;
+}
+
+.editor button[type='submit'] {
+  align-self: flex-start;
+  padding: 9px 20px;
+  background: var(--pop-green);
+  color: #fff;
+  border: 2px solid var(--pop-ink);
+  border-radius: 999px;
+  box-shadow: 0 4px 0 var(--pop-green-dark);
+  font-weight: 800;
+  font-family: inherit;
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.editor button[type='submit']:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 var(--pop-green-dark);
+}
+
+.editor button[type='submit']:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--pop-green-dark);
+}
+
+/* --- ストーリービート一覧 --- */
+
+.beat-list {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.beat {
+  display: flex;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--pop-card);
+  border: 2px solid var(--pop-ink);
+  border-radius: var(--pop-radius-md);
+  box-shadow: 0 3px 0 var(--pop-shadow);
+}
+
+.beat-dialogue {
+  border-color: var(--pop-blue-dark);
+}
+
+.beat-label {
+  border-color: var(--pop-yellow-dark);
+  background: #fffaea;
+}
+
+.beat-choice {
+  border-color: var(--pop-red-dark);
+}
+
+.beat-jump {
+  border-color: var(--pop-purple-dark);
+}
+
+.beat-bgm,
+.beat-se {
+  border-color: var(--pop-green-dark);
+}
+
+.beat-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.beat-controls button {
+  width: 30px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 0;
+  background: #fff;
+  border: 2px solid var(--pop-ink);
+  border-radius: var(--pop-radius-sm);
+  color: inherit;
+  cursor: pointer;
+}
+
+.beat-controls button:hover {
+  background: var(--pop-yellow);
+}
+
+.beat-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.beat-body select,
+.beat-body input[type='text'] {
+  width: 100%;
+}
+
+.label-prefix {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--pop-yellow-dark);
+}
+
+.choice-option-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.choice-option-row {
+  display: flex;
+  gap: 6px;
+}
+
+.choice-option-row input {
+  flex: 1;
+}
+
+.choice-option-row select {
+  flex: 1;
+}
+
+.choice-option-row button {
+  background: #fff;
+  border: 2px solid var(--pop-ink);
+  border-radius: var(--pop-radius-sm);
+  color: inherit;
+  cursor: pointer;
+  padding: 0 10px;
+  font-weight: 700;
+}
+
+.choice-option-row button:hover {
+  background: var(--pop-red);
+  color: #fff;
+}
+
+.beat-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.beat-toolbar button {
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 800;
+  font-family: inherit;
+  background: var(--pop-sky);
+  border: 2px solid var(--pop-ink);
+  border-radius: 999px;
+  color: var(--pop-ink);
+  cursor: pointer;
+  transition: transform 0.1s ease, background 0.1s ease;
+}
+
+.beat-toolbar button:hover {
+  background: var(--pop-blue);
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+/* --- ギャラリー・ログイン --- */
+
+.gallery {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #eaf7ff 0%, #fff8ec 100%);
+  color: var(--pop-ink);
+  padding: 40px 32px;
+}
+
+.gallery h1 {
+  margin: 0 0 24px;
+  font-size: 28px;
+  font-weight: 900;
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 18px;
+}
+
+.gallery-card {
+  display: block;
+  padding: 18px;
+  background: var(--pop-card);
+  border: var(--pop-border-w) solid var(--pop-ink);
+  border-radius: var(--pop-radius-md);
+  box-shadow: 0 5px 0 var(--pop-shadow);
+  color: var(--pop-ink);
+  font-weight: 700;
+  text-decoration: none;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.gallery-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 0 var(--pop-shadow);
+}
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #ff9ecb 0%, #ffd479 55%, #ffe9ad 100%);
+  color: var(--pop-ink);
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(360px, 90vw);
+  padding: 28px;
+  background: var(--pop-card);
+  border: var(--pop-border-w) solid var(--pop-ink);
+  border-radius: var(--pop-radius-lg);
+  box-shadow: 0 6px 0 var(--pop-shadow);
+}
+
+.login-form h1 {
+  margin: 0 0 4px;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.login-form button[type='submit'] {
+  padding: 10px 20px;
+  background: var(--pop-red);
+  color: #fff;
+  border: 2px solid var(--pop-ink);
+  border-radius: 999px;
+  box-shadow: 0 4px 0 var(--pop-red-dark);
+  font-weight: 800;
+  font-family: inherit;
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.login-form button[type='submit']:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 var(--pop-red-dark);
+}
+
+.login-form button[type='submit']:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--pop-red-dark);
+}
+
+.login-form button[type='button'] {
+  background: none;
+  border: none;
+  color: var(--pop-blue-dark);
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.login-form button[type='button']:hover {
+  text-decoration: underline;
+}
+
+/* --- ポップなローディングオーバーレイ --- */
+
+.pop-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  background: linear-gradient(180deg, #ff9ecb 0%, #ffd479 55%, #ffe9ad 100%);
+}
+
+.pop-loading-spinner {
+  display: flex;
+  gap: 14px;
+}
+
+.pop-loading-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--pop-red);
+  border: 3px solid var(--pop-ink);
+  animation: pop-bounce 0.9s ease-in-out infinite;
+}
+
+.pop-loading-dot:nth-child(2) {
+  background: var(--pop-blue);
+  animation-delay: 0.15s;
+}
+
+.pop-loading-dot:nth-child(3) {
+  background: var(--pop-yellow);
+  animation-delay: 0.3s;
+}
+
+@keyframes pop-bounce {
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-20px);
+  }
+}
+
+.pop-loading-text {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--pop-ink);
+  text-shadow: 0 2px 0 rgba(255, 255, 255, 0.5);
+}
+
+/* --- 台本読み込み画面 --- */
+
+.import-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.import-form textarea {
+  width: 100%;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.import-preview-meta {
+  font-weight: 700;
+  margin: 0 0 12px;
+}
+
+/* --- 詳細設定画面(すべてまとめて編集) --- */
+
+.all-settings-layout {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .all-settings-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.all-settings-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.all-settings-title-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #6b5f52;
+}
+
+.all-settings-title-input {
+  width: 100%;
+  margin-bottom: 20px;
+}

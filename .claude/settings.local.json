@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc *)",
+      "Bash(npm run *)",
+      "Read(//c/Users/kench/AppData/Local/Temp/claude/c--Users-kench-work-novelgame/01d655b0-967a-41ab-aefa-edf9590c2d4d/scratchpad/pw-driver/**)",
+      "Bash(node test-editor.js)",
+      "Bash(lsof -ti:5173 -sTCP:LISTEN)",
+      "Bash(xargs -r kill)",
+      "WebSearch",
+      "Bash(mkdir -p /c/Users/kench/AppData/Local/Temp/claude/c--Users-kench-work-novelgame/01d655b0-967a-41ab-aefa-edf9590c2d4d/scratchpad/nuxt-probe)",
+      "Read(//c/Users/kench/AppData/Local/Temp/claude/c--Users-kench-work-novelgame/01d655b0-967a-41ab-aefa-edf9590c2d4d/scratchpad/**)",
+      "Bash(npx --yes nuxi@latest init probe-app --packageManager npm --gitInit false)",
+      "Bash(npx --yes nuxi@latest init probe-app --template minimal --packageManager npm --no-install --gitInit false --force)",
+      "Bash(find /c/Users/kench/AppData/Local/Temp/claude/c--Users-kench-work-novelgame/01d655b0-967a-41ab-aefa-edf9590c2d4d/scratchpad/nuxt-probe/probe-app -maxdepth 3 -not -path */node_modules*)",
+      "Bash(npm install *)"
+    ]
+  }
+}

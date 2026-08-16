@@ -1,0 +1,53 @@
+@import './player.css';
+@import './editor.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * 「ポップ・任天堂ゲーム風」のデザイントークン。
+ * 太い縁取り(--pop-ink)+ ビビッドな塗り + 立体的なボタン(下にズレた影)が
+ * 基調。player.css / editor.css の両方から参照する。
+ */
+:root {
+  --pop-red: #ff5a5f;
+  --pop-red-dark: #d93b40;
+  --pop-blue: #2ea9ff;
+  --pop-blue-dark: #1c7fc4;
+  --pop-yellow: #ffd23f;
+  --pop-yellow-dark: #e8a900;
+  --pop-green: #4ecb71;
+  --pop-green-dark: #2fa854;
+  --pop-purple: #b07cff;
+  --pop-purple-dark: #8a53e0;
+  --pop-pink: #ff8fc8;
+  --pop-ink: #3a2e26;
+  --pop-cream: #fff6e5;
+  --pop-sky: #cdeeff;
+  --pop-card: #ffffff;
+  --pop-shadow: rgba(58, 46, 38, 0.25);
+
+  --pop-radius-lg: 24px;
+  --pop-radius-md: 16px;
+  --pop-radius-sm: 10px;
+  --pop-border-w: 3px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* .choice-box や .name-box が display を明示しているため、hidden 属性の既定スタイルより
+   詳細度で負けてしまう。hidden を常に優先させる。 */
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  font-family: 'M PLUS Rounded 1c', 'Segoe UI', 'Hiragino Sans', 'Yu Gothic', sans-serif;
+  color: var(--pop-ink);
+}
