@@ -180,5 +180,8 @@ async function onImportFile(event: Event): Promise<void> {
         <span class="count">すべてまとめて編集</span>
       </NuxtLink>
     </nav>
+    <footer class="editor-footer">
+      🐰 ヘッドホンウサギ / © {{ new Date().getFullYear() }} 浦和うさぎスタジオ
+    </footer>
   </div>
 </template>

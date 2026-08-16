@@ -283,7 +283,10 @@ function backTo(target: Step): void {
       </p>
       <button type="button" class="wizard-hero-cta" @click="begin">はじめる →</button>
       <NuxtLink to="/editor" class="wizard-skip">既存の編集を続ける →</NuxtLink>
-      <p class="wizard-hero-credit">🐰 by ヘッドホンウサギ</p>
+      <p class="wizard-hero-credit">
+        © {{ new Date().getFullYear() }} 浦和うさぎスタジオ<br>
+        🐰 ヘッドホンウサギ
+      </p>
     </section>
 
     <!-- Step 2: モード選択 -->
@@ -445,8 +448,8 @@ function backTo(target: Step): void {
 <style scoped>
 .wizard {
   min-height: 100vh;
-  background: linear-gradient(180deg, #ffe9ad 0%, #fff6e5 45%, #cdeeff 100%);
-  color: var(--pop-ink);
+  background: linear-gradient(180deg, var(--brand-sky) 0%, var(--brand-water-bg) 55%, var(--brand-water-light) 100%);
+  color: var(--brand-ink);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -488,9 +491,9 @@ function backTo(target: Step): void {
   font-weight: 900;
   margin: 0;
   color: #fff;
-  -webkit-text-stroke: 3px var(--pop-ink);
+  -webkit-text-stroke: 3px var(--brand-navy);
   paint-order: stroke fill;
-  text-shadow: 0 8px 0 var(--pop-shadow);
+  text-shadow: 0 8px 0 rgba(20, 60, 90, 0.25);
 }
 
 .wizard-hero-lead {
@@ -506,28 +509,29 @@ function backTo(target: Step): void {
   font-weight: 900;
   font-family: inherit;
   color: #fff;
-  background: var(--pop-red);
-  border: var(--pop-border-w) solid var(--pop-ink);
+  background: var(--brand-water);
+  border: var(--pop-border-w) solid var(--brand-navy);
   border-radius: 999px;
-  box-shadow: 0 8px 0 var(--pop-red-dark);
+  box-shadow: 0 8px 0 var(--brand-water-dark);
   cursor: pointer;
   transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
 
 .wizard-hero-cta:hover {
   transform: translateY(-3px);
-  box-shadow: 0 11px 0 var(--pop-red-dark);
+  box-shadow: 0 11px 0 var(--brand-water-dark);
+  background: var(--brand-aqua);
 }
 
 .wizard-hero-cta:active {
   transform: translateY(3px);
-  box-shadow: 0 3px 0 var(--pop-red-dark);
+  box-shadow: 0 3px 0 var(--brand-water-dark);
 }
 
 .wizard-skip {
   font-size: 14px;
   font-weight: 700;
-  color: var(--pop-blue-dark);
+  color: var(--brand-water-dark);
   text-decoration: none;
 }
 
@@ -569,23 +573,24 @@ function backTo(target: Step): void {
   font-weight: 800;
   font-family: inherit;
   color: #fff;
-  background: var(--pop-green);
-  border: var(--pop-border-w) solid var(--pop-ink);
+  background: var(--brand-water);
+  border: var(--pop-border-w) solid var(--brand-navy);
   border-radius: 999px;
-  box-shadow: 0 5px 0 var(--pop-green-dark);
+  box-shadow: 0 5px 0 var(--brand-water-dark);
   cursor: pointer;
   transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
 
 .wizard-primary:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 7px 0 var(--pop-green-dark);
+  box-shadow: 0 7px 0 var(--brand-water-dark);
+  background: var(--brand-aqua);
 }
 
 .wizard-primary:active,
 .wizard-primary:disabled {
   transform: translateY(2px);
-  box-shadow: 0 1px 0 var(--pop-green-dark);
+  box-shadow: 0 1px 0 var(--brand-water-dark);
 }
 
 .wizard-secondary {
@@ -593,15 +598,15 @@ function backTo(target: Step): void {
   font-size: 14px;
   font-weight: 800;
   font-family: inherit;
-  color: var(--pop-ink);
-  background: var(--pop-cream);
-  border: 2px solid var(--pop-ink);
+  color: var(--brand-navy);
+  background: #fff;
+  border: 2px solid var(--brand-water-dark);
   border-radius: 999px;
   cursor: pointer;
 }
 
 .wizard-secondary:hover {
-  background: var(--pop-yellow);
+  background: var(--brand-water-light);
 }
 
 .wizard-back {
@@ -610,7 +615,7 @@ function backTo(target: Step): void {
   font-size: 13px;
   font-weight: 700;
   font-family: inherit;
-  color: var(--pop-blue-dark);
+  color: var(--brand-water-dark);
   background: transparent;
   border: none;
   cursor: pointer;

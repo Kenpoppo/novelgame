@@ -28,6 +28,19 @@
   --pop-card: #ffffff;
   --pop-shadow: rgba(58, 46, 38, 0.25);
 
+  /* 浦和うさぎスタジオのブランドカラー(水色基調)。
+     製作するストーリー本体には影響させず、エディタ/ウィザード/ギャラリー
+     など「メタなUI」だけに使う。青系のグラデーションと配色で視認性を優先。 */
+  --brand-ink: #163a52;
+  --brand-water: #3ba7d6;
+  --brand-water-dark: #1f6f95;
+  --brand-water-light: #cbe9f7;
+  --brand-water-bg: #e6f4fb;
+  --brand-sky: #f4fbfe;
+  --brand-aqua: #5fd4d4;
+  --brand-aqua-dark: #34a3a3;
+  --brand-navy: #0e3554;
+
   --pop-radius-lg: 24px;
   --pop-radius-md: 16px;
   --pop-radius-sm: 10px;

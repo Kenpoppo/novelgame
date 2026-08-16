@@ -6,6 +6,7 @@ interface GameSummary {
 }
 
 const { data } = await useFetch<{ games: GameSummary[] }>('/api/games')
+const year = new Date().getFullYear()
 </script>
 
 <template>
@@ -26,6 +27,9 @@ const { data } = await useFetch<{ games: GameSummary[] }>('/api/games')
         {{ game.title }}
       </NuxtLink>
     </div>
-    <footer class="gallery-footer">🐰 by ヘッドホンウサギ</footer>
+    <footer class="gallery-footer">
+      🐰 ヘッドホンウサギ<br>
+      © {{ year }} 浦和うさぎスタジオ / URAWA USAGI Studio Inc.
+    </footer>
   </div>
 </template>
