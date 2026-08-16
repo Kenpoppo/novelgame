@@ -3,6 +3,8 @@ export interface CharacterAsset {
   name: string
   color?: string
   imageDataUrl?: string
+  // 状況に応じて切り替える2枚目の立ち絵(表情/ポーズ違いなど)。
+  imageAltDataUrl?: string
   // 各キャラクターに紐づく1つのサンプル/テーマ音声(data URL or storage URL)。
   voiceDataUrl?: string
   // 人物設定(一人称・口調・背景など)のフリーテキスト。編集画面での参考用。
@@ -22,7 +24,7 @@ export interface AudioCue {
  * resolveLabels() で取り除かれ、labels マップへ解決される。
  */
 export type Beat =
-  | { id: string; type: 'dialogue'; characterId: string | null; text: string }
+  | { id: string; type: 'dialogue'; characterId: string | null; text: string; useAltImage?: boolean }
   | { id: string; type: 'label'; name: string }
   | { id: string; type: 'jump'; target: string }
   | { id: string; type: 'choice'; options: { text: string; target: string }[] }

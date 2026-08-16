@@ -18,9 +18,10 @@ interface CharacterAsset {
   id: string
   name: string
   color?: string
-  imageDataUrl?: string // アップロード画像(任意)
-  voiceDataUrl?: string // サンプル/テーマ音声(任意、CharacterPanelから試聴可)
-  notes?: string        // 人物設定・口調・背景などのフリーテキスト(任意)
+  imageDataUrl?: string    // アップロード画像A(任意、既定の立ち絵)
+  imageAltDataUrl?: string // 画像B(任意、状況に応じて切り替える別ポーズ/表情)
+  voiceDataUrl?: string    // サンプル/テーマ音声(任意、CharacterPanelから試聴可)
+  notes?: string           // 人物設定・口調・背景などのフリーテキスト(任意)
 }
 
 interface AudioCue {
@@ -32,7 +33,7 @@ interface AudioCue {
 }
 
 type Beat =
-  | { id: string; type: 'dialogue'; characterId: string | null; text: string }
+  | { id: string; type: 'dialogue'; characterId: string | null; text: string; useAltImage?: boolean }
   | { id: string; type: 'label'; name: string }
   | { id: string; type: 'jump'; target: string }
   | { id: string; type: 'choice'; options: { text: string; target: string }[] }

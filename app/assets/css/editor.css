@@ -371,6 +371,11 @@
   border: 2px solid var(--pop-ink);
 }
 
+.character-thumb--alt {
+  border-style: dashed;
+  margin-left: -8px;
+}
+
 .character-swatch {
   width: 16px;
   height: 16px;
@@ -564,6 +569,15 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.beat-image-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--pop-ink);
 }
 
 .beat-body select,

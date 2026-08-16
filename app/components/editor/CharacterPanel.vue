@@ -67,6 +67,14 @@ async function setImage(character: CharacterAsset, event: Event): Promise<void> 
   input.value = ''
 }
 
+async function setImageAlt(character: CharacterAsset, event: Event): Promise<void> {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  character.imageAltDataUrl = await readFileAsDataUrl(file)
+  input.value = ''
+}
+
 async function setVoice(character: CharacterAsset, event: Event): Promise<void> {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
@@ -77,6 +85,10 @@ async function setVoice(character: CharacterAsset, event: Event): Promise<void> 
 
 function clearImage(character: CharacterAsset): void {
   character.imageDataUrl = undefined
+}
+
+function clearImageAlt(character: CharacterAsset): void {
+  character.imageAltDataUrl = undefined
 }
 
 function clearVoice(character: CharacterAsset): void {
@@ -133,13 +145,14 @@ onUnmounted(() => {
     <ul class="character-list">
       <li v-for="character in store.project?.characters ?? []" :key="character.id" class="character-item">
         <div class="character-item-main">
-          <img v-if="character.imageDataUrl" class="character-thumb" :src="character.imageDataUrl" alt="">
+          <img v-if="character.imageDataUrl" class="character-thumb" :src="character.imageDataUrl" alt="A">
+          <img v-if="character.imageAltDataUrl" class="character-thumb character-thumb--alt" :src="character.imageAltDataUrl" alt="B">
           <span class="character-swatch" :style="{ background: character.color ?? '#8ec5ff' }" />
           <span class="character-name">{{ character.name }}</span>
 
           <div class="character-asset-actions">
             <label class="character-asset-button">
-              {{ character.imageDataUrl ? '画像を変更' : '画像を設定' }}
+              {{ character.imageDataUrl ? '画像A変更' : '画像A設定' }}
               <input type="file" accept="image/*" hidden @change="setImage(character, $event)">
             </label>
             <button
@@ -147,7 +160,18 @@ onUnmounted(() => {
               type="button"
               class="character-asset-clear"
               @click="clearImage(character)"
-            >画像を外す</button>
+            >Aを外す</button>
+
+            <label class="character-asset-button">
+              {{ character.imageAltDataUrl ? '画像B変更' : '画像B設定' }}
+              <input type="file" accept="image/*" hidden @change="setImageAlt(character, $event)">
+            </label>
+            <button
+              v-if="character.imageAltDataUrl"
+              type="button"
+              class="character-asset-clear"
+              @click="clearImageAlt(character)"
+            >Bを外す</button>
 
             <label class="character-asset-button">
               {{ character.voiceDataUrl ? 'ボイス変更' : 'ボイス設定' }}

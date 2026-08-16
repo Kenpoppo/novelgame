@@ -32,6 +32,10 @@ export async function publishProject(
           const url = await assetStorage.upload(ownerId, character.imageDataUrl, `characters/${character.id}`)
           next = { ...next, imageDataUrl: url }
         }
+        if (character.imageAltDataUrl?.startsWith('data:')) {
+          const url = await assetStorage.upload(ownerId, character.imageAltDataUrl, `characters/${character.id}-alt`)
+          next = { ...next, imageAltDataUrl: url }
+        }
         if (character.voiceDataUrl?.startsWith('data:')) {
           const url = await assetStorage.upload(ownerId, character.voiceDataUrl, `characters/${character.id}-voice`)
           next = { ...next, voiceDataUrl: url }

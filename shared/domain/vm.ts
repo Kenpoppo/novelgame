@@ -59,7 +59,10 @@ export class ScriptVM {
     switch (instruction.type) {
       case 'dialogue': {
         const character = instruction.speaker ? this.script.characters[instruction.speaker] : undefined
-        this.callbacks.onDialogue(character?.name ?? null, character?.color, character?.imageDataUrl, instruction.text)
+        const image = instruction.useAltImage && character?.imageAltDataUrl
+          ? character.imageAltDataUrl
+          : character?.imageDataUrl
+        this.callbacks.onDialogue(character?.name ?? null, character?.color, image, instruction.text)
         break
       }
       case 'jump': {

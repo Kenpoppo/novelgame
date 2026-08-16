@@ -23,7 +23,12 @@ export function compileProject(project: Project): CompileResult {
         if (beat.characterId !== null && !characters[beat.characterId]) {
           errors.push(`台詞「${beat.text}」のキャラクターが見つかりません`)
         }
-        items.push({ type: 'dialogue', speaker: beat.characterId, text: beat.text })
+        items.push({
+          type: 'dialogue',
+          speaker: beat.characterId,
+          text: beat.text,
+          ...(beat.useAltImage ? { useAltImage: true } : {}),
+        })
         break
       }
       case 'label': {

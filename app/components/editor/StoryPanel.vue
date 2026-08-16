@@ -7,6 +7,11 @@ const labelNames = computed(() =>
   (store.project?.beats ?? []).filter((beat) => beat.type === 'label').map((beat) => beat.name),
 )
 
+function characterHasAlt(characterId: string): boolean {
+  const character = store.project?.characters.find((c) => c.id === characterId)
+  return !!character?.imageAltDataUrl
+}
+
 function moveBeat(index: number, delta: number): void {
   if (!store.project) return
   const beats = store.project.beats
@@ -81,6 +86,13 @@ function addBeat(type: Beat['type']): void {
               </option>
             </select>
             <textarea v-model="beat.text" rows="2" placeholder="セリフ・地の文" />
+            <label
+              v-if="beat.characterId && characterHasAlt(beat.characterId)"
+              class="beat-image-toggle"
+            >
+              <input v-model="beat.useAltImage" type="checkbox">
+              画像B(別ポーズ/表情)を使う
+            </label>
           </template>
 
           <template v-else-if="beat.type === 'label'">
