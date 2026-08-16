@@ -169,11 +169,10 @@
   margin-bottom: 14px;
   padding: 6px 22px;
   border-radius: 999px;
-  background: var(--pop-blue);
   border: 2px solid var(--pop-ink);
-  color: #fff;
   font-weight: 800;
   font-size: 20px;
+  /* 背景色と文字色は DialogueBox.vue でキャラクター色から自動計算する */
 }
 
 .text-box {
