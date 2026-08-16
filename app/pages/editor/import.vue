@@ -42,44 +42,52 @@ async function analyze(): Promise<void> {
   errorMessage.value = null
   preview.value = null
 
+  // 最初の非空行をタイトルとして扱い、それ以降を本文として解析する。
+  // タイトル行を本文から除外することで、解析結果のセリフ・地の文に混入しない。
+  const lines = text.value.split(/\r?\n/)
+  const titleLineIndex = lines.findIndex((line) => line.trim().length > 0)
+  const firstLineTitle = titleLineIndex >= 0 ? lines[titleLineIndex]!.trim() : ''
+  const bodyText = titleLineIndex >= 0 ? lines.slice(titleLineIndex + 1).join('\n') : text.value
+
   try {
     // 1. 自前のテキスト台本DSLに沿っているか、まず試す(高精度)。
     // 地の文も type:'dialogue'(speaker:null) になるため、「@charで登録された
     // キャラクターの発言」が2件以上あるかで判定する(単なる平文との区別)。
-    const parsed = parseScript(text.value)
+    const parsed = parseScript(bodyText)
     const namedDialogueCount = parsed.instructions.filter(
       (instruction) => instruction.type === 'dialogue' && instruction.speaker !== null,
     ).length
     if (namedDialogueCount >= 2) {
-      preview.value = { ...analysisToProjectFragments(dslResultToAnalysis(parsed)), usedAi: false }
+      const fragments = analysisToProjectFragments(dslResultToAnalysis(parsed))
+      preview.value = { ...fragments, title: firstLineTitle || fragments.title, usedAi: false }
       return
     }
 
     // 2. AIでの解析を試す(サーバー側でANTHROPIC_API_KEY未設定なら ok:false)
     const result = await $fetch<AnalyzeResponse>('/api/import/analyze', {
       method: 'POST',
-      body: { text: text.value },
+      body: { text: bodyText },
     })
 
     if (result.ok && result.analysis) {
-      preview.value = {
-        ...analysisToProjectFragments({
-          title: result.analysis.title ?? undefined,
-          characters: result.analysis.characters.map((character) => ({
-            name: character.name,
-            color: character.color ?? undefined,
-          })),
-          beats: result.analysis.beats,
-        }),
-        usedAi: true,
-      }
+      const fragments = analysisToProjectFragments({
+        title: result.analysis.title ?? undefined,
+        characters: result.analysis.characters.map((character) => ({
+          name: character.name,
+          color: character.color ?? undefined,
+        })),
+        beats: result.analysis.beats,
+      })
+      preview.value = { ...fragments, title: firstLineTitle || fragments.title, usedAi: true }
       return
     }
 
     // 3. AIが使えない/失敗した場合はヒューリスティック解析にフォールバック
-    preview.value = { ...analysisToProjectFragments(analyzeScriptHeuristically(text.value)), usedAi: false }
+    const fragments = analysisToProjectFragments(analyzeScriptHeuristically(bodyText))
+    preview.value = { ...fragments, title: firstLineTitle || fragments.title, usedAi: false }
   } catch {
-    preview.value = { ...analysisToProjectFragments(analyzeScriptHeuristically(text.value)), usedAi: false }
+    const fragments = analysisToProjectFragments(analyzeScriptHeuristically(bodyText))
+    preview.value = { ...fragments, title: firstLineTitle || fragments.title, usedAi: false }
   } finally {
     analyzing.value = false
   }
@@ -113,6 +121,7 @@ function apply(): void {
           セリフを自動で読み取ります。可能ならAIで解析し、使えない場合は
           簡易的なルールベース解析にフォールバックします。選択肢・分岐は
           自動設定されないため、反映後にストーリー編集で追加してください。
+          テキストの最初の行はタイトルとして扱います(本文には含めません)。
           反映時は現在のタイトル・キャラクター・ストーリーを読み込んだ内容で
           置き換えます(音源はそのまま残ります)。
         </p>
@@ -126,6 +135,9 @@ function apply(): void {
 
       <section v-if="preview" class="panel">
         <h2>解析結果プレビュー({{ preview.usedAi ? 'AI解析' : '簡易解析' }})</h2>
+        <p v-if="preview.title" class="import-preview-title">
+          タイトル: <strong>{{ preview.title }}</strong>
+        </p>
         <p class="import-preview-meta">
           キャラクター {{ preview.characters.length }}人 / セリフ・地の文 {{ preview.beats.length }}件を検出しました。
         </p>
