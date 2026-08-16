@@ -67,12 +67,14 @@ export function parseProfileText(input: string): ProfileEntry[] {
 
     let name = ''
     let color: string | undefined
+    let hasExplicitNameKey = false
     const notesLines: string[] = []
 
     for (const line of lines) {
       const nameKey = line.match(KEY_NAME)
       if (nameKey) {
         name = nameKey[1]!.trim()
+        hasExplicitNameKey = true
         continue
       }
       const colorKey = line.match(KEY_COLOR)
@@ -104,13 +106,18 @@ export function parseProfileText(input: string): ProfileEntry[] {
       notesLines.push(line)
     }
 
-    if (name) {
-      entries.push({
-        name,
-        color,
-        notes: notesLines.length > 0 ? notesLines.join('\n') : undefined,
-      })
-    }
+    if (!name) continue
+    // 「名前:」等の明示的キーがなく、かつ説明行も無い単独名前ブロックは
+    // 章タイトルや組織名(例: 「県警本部」)である可能性が高いため、
+    // キャラクターとしては登録しない。明示的キーがある場合はユーザーが
+    // 意図的に名前だけを登録したとみなして残す。
+    if (!hasExplicitNameKey && notesLines.length === 0) continue
+
+    entries.push({
+      name,
+      color,
+      notes: notesLines.length > 0 ? notesLines.join('\n') : undefined,
+    })
   }
 
   return entries
