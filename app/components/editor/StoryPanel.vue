@@ -23,6 +23,15 @@ function beatDomId(index: number): string {
   return `beat-${index}`
 }
 
+const jumpToNumber = ref('')
+function jumpByNumber(): void {
+  const n = parseInt(jumpToNumber.value, 10)
+  if (Number.isNaN(n)) return
+  const total = store.project?.beats.length ?? 0
+  const clamped = Math.min(Math.max(1, n), total)
+  jumpToBeat(clamped - 1)
+}
+
 function characterHasAlt(characterId: string): boolean {
   const character = store.project?.characters.find((c) => c.id === characterId)
   return !!character?.imageAltDataUrl
@@ -169,8 +178,8 @@ function addBeat(type: Beat['type']): void {
   <section class="panel">
     <h2>ストーリー <span class="beat-count">({{ store.project?.beats.length ?? 0 }} ビート)</span></h2>
 
-    <nav v-if="labelJumpTargets.length > 0" class="label-jumper">
-      <span class="label-jumper-title">📍 ラベルへ移動:</span>
+    <nav v-if="labelJumpTargets.length > 0 || (store.project?.beats.length ?? 0) >= 10" class="label-jumper">
+      <span class="label-jumper-title">📍 ジャンプ:</span>
       <button
         v-for="target in labelJumpTargets"
         :key="target.beat.id"
@@ -180,6 +189,11 @@ function addBeat(type: Beat['type']): void {
       >
         {{ target.beat.name }}
       </button>
+      <form v-if="(store.project?.beats.length ?? 0) >= 10" class="label-jumper-number" @submit.prevent="jumpByNumber">
+        <span>#</span>
+        <input v-model="jumpToNumber" type="number" min="1" :max="store.project?.beats.length ?? 1" placeholder="番号">
+        <button type="submit">移動</button>
+      </form>
     </nav>
 
     <ol class="beat-list">

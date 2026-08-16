@@ -56,6 +56,53 @@ function conflictingCharacter(target: { id: string; color?: string }): { name: s
   return null
 }
 
+// キャラクターのドラッグ&ドロップ並び替え(ビートと同じ方式)。
+const charDragFrom = ref<string | null>(null)
+const charDragOver = ref<string | null>(null)
+
+function onCharDragStart(id: string, event: DragEvent): void {
+  charDragFrom.value = id
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', id)
+  }
+}
+
+function onCharDragOver(id: string, event: DragEvent): void {
+  if (!charDragFrom.value || charDragFrom.value === id) return
+  event.preventDefault()
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'move'
+  charDragOver.value = id
+}
+
+function onCharDrop(id: string, event: DragEvent): void {
+  event.preventDefault()
+  if (!store.project || !charDragFrom.value || charDragFrom.value === id) {
+    charDragFrom.value = null
+    charDragOver.value = null
+    return
+  }
+  const characters = store.project.characters
+  const fromIndex = characters.findIndex((c) => c.id === charDragFrom.value)
+  const toIndex = characters.findIndex((c) => c.id === id)
+  if (fromIndex < 0 || toIndex < 0) {
+    charDragFrom.value = null
+    charDragOver.value = null
+    return
+  }
+  const [c] = characters.splice(fromIndex, 1)
+  if (!c) return
+  const target = fromIndex < toIndex ? toIndex - 1 : toIndex
+  characters.splice(target, 0, c)
+  charDragFrom.value = null
+  charDragOver.value = null
+}
+
+function onCharDragEnd(): void {
+  charDragFrom.value = null
+  charDragOver.value = null
+}
+
 // TTS 音声の一覧(プロジェクト tts 設定から取得)
 const ttsVoices = ref<TtsVoice[]>([])
 
@@ -234,7 +281,17 @@ onUnmounted(() => {
     >
 
     <ul class="character-list">
-      <li v-for="character in filteredCharacters" :key="character.id" class="character-item">
+      <li
+        v-for="character in filteredCharacters"
+        :key="character.id"
+        class="character-item"
+        :class="{ 'character-item--drag-over': charDragOver === character.id, 'character-item--dragging': charDragFrom === character.id }"
+        draggable="true"
+        @dragstart="onCharDragStart(character.id, $event)"
+        @dragover="onCharDragOver(character.id, $event)"
+        @drop="onCharDrop(character.id, $event)"
+        @dragend="onCharDragEnd"
+      >
         <div class="character-item-main">
           <img v-if="character.imageDataUrl" class="character-thumb" :src="character.imageDataUrl" alt="A">
           <img v-if="character.imageAltDataUrl" class="character-thumb character-thumb--alt" :src="character.imageAltDataUrl" alt="B">

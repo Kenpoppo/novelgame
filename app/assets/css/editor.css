@@ -339,6 +339,15 @@
   align-items: stretch;
 }
 
+.character-item--dragging {
+  opacity: 0.4;
+}
+
+.character-item--drag-over {
+  outline: 3px dashed var(--pop-blue-dark);
+  outline-offset: 2px;
+}
+
 .character-item-main {
   display: flex;
   align-items: center;
@@ -694,6 +703,38 @@
 }
 
 .label-jumper-chip:hover {
+  background: var(--pop-yellow);
+}
+
+.label-jumper-number {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.label-jumper-number input[type='number'] {
+  width: 72px;
+  padding: 4px 8px;
+  font-family: inherit;
+  border: 2px solid var(--pop-ink);
+  border-radius: 6px;
+}
+
+.label-jumper-number button {
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  background: #fff;
+  border: 2px solid var(--pop-ink);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.label-jumper-number button:hover {
   background: var(--pop-yellow);
 }
 
