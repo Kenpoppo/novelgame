@@ -22,7 +22,7 @@ import type { ScriptAnalysis } from './scriptImport'
  *     なのでキャラクターとして扱わず、その行はナレーションへ格下げする。
  */
 
-const NAME_ONLY_LINE = /^([^\s:：「」『』。、！？…〜]{1,12})(?:[(（][^)）]*[)）])?$/
+const NAME_ONLY_LINE = /^([^\s:：「」『』。、！？…〜を]{1,12})(?:[(（][^)）]*[)）])?$/
 const SAME_LINE_COLON = /^([^\s:：]{1,12})[:：]\s*(.+)$/
 const SAME_LINE_QUOTE = /^([^\s「『]{1,12})[「『](.+)[」』]$/
 const QUOTE_ONLY_LINE = /^[「『](.+)[」』]$/
@@ -68,6 +68,44 @@ export function analyzeScriptHeuristically(text: string): ScriptAnalysis {
   const lines = text.split(/\r?\n/).map((line) => line.trim())
   const beats: RawBeat[] = []
 
+  /** 与えられた位置以降で最初の非空行の位置を返す。無ければ -1。 */
+  const findNextNonEmpty = (from: number): number => {
+    for (let j = from; j < lines.length; j++) {
+      if (lines[j]) return j
+    }
+    return -1
+  }
+
+  /**
+   * 位置 `start` から「」(または『』)で始まる引用を、閉じ記号が現れる行まで
+   * 連結して1つのセリフとして取り出す。取り出せなければ null。
+   */
+  const consumeQuoteFrom = (start: number): { text: string; endIndex: number } | null => {
+    const first = lines[start]
+    if (!first) return null
+    const openMatch = first.match(/^[「『](.*)$/)
+    if (!openMatch) return null
+
+    // 単一行で完結する場合
+    const single = first.match(QUOTE_ONLY_LINE)
+    if (single) return { text: single[1]!, endIndex: start }
+
+    // 複数行に渡る「」 → 閉じ記号が現れるまで結合する
+    const parts: string[] = [openMatch[1]!]
+    for (let j = start + 1; j < lines.length; j++) {
+      const l = lines[j]
+      if (l === undefined) break
+      const close = l.match(/^(.*)[」』]\s*$/)
+      if (close) {
+        parts.push(close[1]!)
+        return { text: parts.filter((p) => p.length > 0).join('\n'), endIndex: j }
+      }
+      // 途中行は空行でも本文に含めない(段落分けとして扱う程度)
+      if (l.length > 0) parts.push(l)
+    }
+    return null
+  }
+
   let lastSpeaker: string | null = null
   let i = 0
   while (i < lines.length) {
@@ -80,16 +118,20 @@ export function analyzeScriptHeuristically(text: string): ScriptAnalysis {
       continue
     }
 
-    // 1. 名前だけの行 + 次の非空行が「セリフ」
+    // 1. 名前だけの行 + 次の非空行が「セリフ」(空行を跨いで良い)
     const nameOnlyMatch = line.match(NAME_ONLY_LINE)
-    const nextLine = lines[i + 1]
-    const nextQuoteMatch = nextLine ? nextLine.match(QUOTE_ONLY_LINE) : null
-    if (nameOnlyMatch && nextQuoteMatch) {
-      const speaker = nameOnlyMatch[1]!
-      beats.push({ speaker, text: nextQuoteMatch[1]! })
-      lastSpeaker = speaker
-      i += 2
-      continue
+    if (nameOnlyMatch) {
+      const nextIdx = findNextNonEmpty(i + 1)
+      if (nextIdx >= 0) {
+        const quote = consumeQuoteFrom(nextIdx)
+        if (quote) {
+          const speaker = nameOnlyMatch[1]!
+          beats.push({ speaker, text: quote.text })
+          lastSpeaker = speaker
+          i = quote.endIndex + 1
+          continue
+        }
+      }
     }
 
     // 2. 同一行「名前: セリフ」「名前「セリフ」」
@@ -103,14 +145,26 @@ export function analyzeScriptHeuristically(text: string): ScriptAnalysis {
     }
 
     // 3. 名前の再掲なしで続く「セリフ」だけの行 → 直前の話者の続き
-    const quoteOnlyMatch = line.match(QUOTE_ONLY_LINE)
-    if (lastSpeaker && quoteOnlyMatch) {
-      beats.push({ speaker: lastSpeaker, text: quoteOnlyMatch[1]! })
-      i++
+    //    複数行に渡る引用にも対応する(閉じ記号までを1つのセリフに結合)。
+    if (lastSpeaker) {
+      const quote = consumeQuoteFrom(i)
+      if (quote) {
+        beats.push({ speaker: lastSpeaker, text: quote.text })
+        i = quote.endIndex + 1
+        continue
+      }
+    }
+
+    // 4. 話者を持たない引用(ナレーション中の声・ラジオの音声など)も
+    //    複数行にまたがる場合は1つの地の文としてまとめる。
+    const orphanQuote = consumeQuoteFrom(i)
+    if (orphanQuote) {
+      beats.push({ speaker: null, text: orphanQuote.text })
+      i = orphanQuote.endIndex + 1
       continue
     }
 
-    // 4. どれにも当てはまらない行は地の文
+    // 5. どれにも当てはまらない行は地の文
     beats.push({ speaker: null, text: line })
     i++
   }
