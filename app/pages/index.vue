@@ -11,8 +11,12 @@ const { data } = await useFetch<{ games: GameSummary[] }>('/api/games')
 <template>
   <div class="gallery">
     <h1>公開作品ギャラリー</h1>
+    <div class="gallery-intro">
+      <NuxtLink to="/start" class="gallery-start-cta">✨ はじめての方はこちら（ガイド付きセットアップ）</NuxtLink>
+      <NuxtLink to="/editor" class="gallery-editor-link">既存の編集を続ける →</NuxtLink>
+    </div>
     <p v-if="!data?.games.length">
-      まだ公開作品がありません。<NuxtLink to="/editor">エディタ</NuxtLink>でストーリーを作って公開してみましょう。
+      まだ公開作品がありません。<NuxtLink to="/start">ガイドから始めましょう</NuxtLink>。
     </p>
     <div v-else class="gallery-grid">
       <NuxtLink v-for="game in data.games" :key="game.id" :to="`/play/${game.id}`" class="gallery-card">

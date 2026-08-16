@@ -37,7 +37,7 @@ export default defineNuxtConfig({
       // matchesAnyPattern() は `*` を `.*` に置換した正規表現の完全一致で
       // 判定するため、末尾スラッシュの有無で別パターンが必要
       // (`/editor` 単体は `/editor/**` にマッチしない)。
-      exclude: ['/', '/editor', '/editor/**', '/play/**'],
+      exclude: ['/', '/start', '/editor', '/editor/**', '/play/**'],
     },
   },
 })
