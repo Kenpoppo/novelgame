@@ -132,41 +132,49 @@ onUnmounted(() => {
 
     <ul class="character-list">
       <li v-for="character in store.project?.characters ?? []" :key="character.id" class="character-item">
-        <img v-if="character.imageDataUrl" class="character-thumb" :src="character.imageDataUrl" alt="">
-        <span class="character-swatch" :style="{ background: character.color ?? '#8ec5ff' }" />
-        <span class="character-name">{{ character.name }}</span>
+        <div class="character-item-main">
+          <img v-if="character.imageDataUrl" class="character-thumb" :src="character.imageDataUrl" alt="">
+          <span class="character-swatch" :style="{ background: character.color ?? '#8ec5ff' }" />
+          <span class="character-name">{{ character.name }}</span>
 
-        <div class="character-asset-actions">
-          <label class="character-asset-button">
-            {{ character.imageDataUrl ? '画像を変更' : '画像を設定' }}
-            <input type="file" accept="image/*" hidden @change="setImage(character, $event)">
-          </label>
-          <button
-            v-if="character.imageDataUrl"
-            type="button"
-            class="character-asset-clear"
-            @click="clearImage(character)"
-          >画像を外す</button>
+          <div class="character-asset-actions">
+            <label class="character-asset-button">
+              {{ character.imageDataUrl ? '画像を変更' : '画像を設定' }}
+              <input type="file" accept="image/*" hidden @change="setImage(character, $event)">
+            </label>
+            <button
+              v-if="character.imageDataUrl"
+              type="button"
+              class="character-asset-clear"
+              @click="clearImage(character)"
+            >画像を外す</button>
 
-          <label class="character-asset-button">
-            {{ character.voiceDataUrl ? 'ボイス変更' : 'ボイス設定' }}
-            <input type="file" accept="audio/*" hidden @change="setVoice(character, $event)">
-          </label>
-          <button
-            v-if="character.voiceDataUrl"
-            type="button"
-            class="character-asset-play"
-            @click="playVoice(character)"
-          >▶ 試聴</button>
-          <button
-            v-if="character.voiceDataUrl"
-            type="button"
-            class="character-asset-clear"
-            @click="clearVoice(character)"
-          >ボイスを外す</button>
+            <label class="character-asset-button">
+              {{ character.voiceDataUrl ? 'ボイス変更' : 'ボイス設定' }}
+              <input type="file" accept="audio/*" hidden @change="setVoice(character, $event)">
+            </label>
+            <button
+              v-if="character.voiceDataUrl"
+              type="button"
+              class="character-asset-play"
+              @click="playVoice(character)"
+            >▶ 試聴</button>
+            <button
+              v-if="character.voiceDataUrl"
+              type="button"
+              class="character-asset-clear"
+              @click="clearVoice(character)"
+            >ボイスを外す</button>
+          </div>
+
+          <button type="button" @click="removeCharacter(character.id)">削除</button>
         </div>
-
-        <button type="button" @click="removeCharacter(character.id)">削除</button>
+        <textarea
+          v-model="character.notes"
+          class="character-notes"
+          rows="2"
+          placeholder="人物設定・口調・背景などのメモ(任意)"
+        />
       </li>
     </ul>
 

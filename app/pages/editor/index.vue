@@ -96,6 +96,11 @@ async function publish(): Promise<void> {
         <span>台本を読み込む</span>
         <span class="count">既存の台本から自動設定</span>
       </NuxtLink>
+      <NuxtLink to="/editor/profiles" class="editor-menu-tile editor-menu-tile--profiles">
+        <span class="icon">🪪</span>
+        <span>プロフィール読み込み</span>
+        <span class="count">人物設定を一括登録</span>
+      </NuxtLink>
       <NuxtLink to="/editor/all" class="editor-menu-tile editor-menu-tile--all">
         <span class="icon">🗂️</span>
         <span>詳細設定</span>

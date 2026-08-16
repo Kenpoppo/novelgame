@@ -5,6 +5,8 @@ export interface CharacterAsset {
   imageDataUrl?: string
   // 各キャラクターに紐づく1つのサンプル/テーマ音声(data URL or storage URL)。
   voiceDataUrl?: string
+  // 人物設定(一人称・口調・背景など)のフリーテキスト。編集画面での参考用。
+  notes?: string
 }
 
 export interface AudioCue {
