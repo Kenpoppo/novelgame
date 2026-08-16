@@ -1,27 +1,9 @@
 <script setup lang="ts">
-import { parseScript } from '#shared/domain/parser'
-import {
-  analysisToProjectFragments,
-  analyzeScriptHeuristically,
-  dslResultToAnalysis,
-  mergeProfilesIntoCharacters,
-} from '#shared/domain/project/scriptImport'
-import { parseProfileText } from '#shared/domain/project/profileImport'
-import type { Beat, CharacterAsset } from '#shared/domain/project/types'
-
-interface AnalyzeResponse {
-  ok: boolean
-  reason?: string
-  analysis?: { title: string | null; characters: { name: string; color: string | null }[]; beats: { speaker: string | null; text: string }[] }
-}
-
 const store = useProjectStore()
 const text = ref('')
-const analyzing = ref(false)
-const errorMessage = ref<string | null>(null)
-const preview = ref<{ title?: string; characters: CharacterAsset[]; beats: Beat[]; usedAi: boolean } | null>(null)
-const mergedProfileCount = ref(0)
 const router = useRouter()
+
+const { analyzing, errorMessage, preview, breakdown, profileSuggestion, analyze } = useScriptImportAnalysis()
 
 onMounted(() => {
   void store.load()
@@ -39,76 +21,6 @@ function onFileChange(event: Event): void {
   reader.readAsText(file)
 }
 
-async function analyze(): Promise<void> {
-  if (!text.value.trim()) return
-  analyzing.value = true
-  errorMessage.value = null
-  preview.value = null
-  mergedProfileCount.value = 0
-
-  // 最初の非空行をタイトルとして扱い、それ以降を本文として解析する。
-  // タイトル行を本文から除外することで、解析結果のセリフ・地の文に混入しない。
-  const lines = text.value.split(/\r?\n/)
-  const titleLineIndex = lines.findIndex((line) => line.trim().length > 0)
-  const firstLineTitle = titleLineIndex >= 0 ? lines[titleLineIndex]!.trim() : ''
-  const bodyText = titleLineIndex >= 0 ? lines.slice(titleLineIndex + 1).join('\n') : text.value
-
-  // 全文に対してプロフィール解析も走らせる。台本と混在していれば人物設定を統合する。
-  const profileEntries = parseProfileText(text.value)
-
-  const mergeAndSet = (
-    fragments: { title?: string; characters: CharacterAsset[]; beats: Beat[] },
-    usedAi: boolean,
-  ) => {
-    const before = fragments.characters.length
-    fragments.characters = mergeProfilesIntoCharacters(fragments.characters, profileEntries)
-    mergedProfileCount.value = fragments.characters.length - before
-    preview.value = { ...fragments, title: firstLineTitle || fragments.title, usedAi }
-  }
-
-  try {
-    // 1. 自前のテキスト台本DSLに沿っているか、まず試す(高精度)。
-    // 地の文も type:'dialogue'(speaker:null) になるため、「@charで登録された
-    // キャラクターの発言」が2件以上あるかで判定する(単なる平文との区別)。
-    const parsed = parseScript(bodyText)
-    const namedDialogueCount = parsed.instructions.filter(
-      (instruction) => instruction.type === 'dialogue' && instruction.speaker !== null,
-    ).length
-    if (namedDialogueCount >= 2) {
-      mergeAndSet(analysisToProjectFragments(dslResultToAnalysis(parsed)), false)
-      return
-    }
-
-    // 2. AIでの解析を試す(サーバー側でANTHROPIC_API_KEY未設定なら ok:false)
-    const result = await $fetch<AnalyzeResponse>('/api/import/analyze', {
-      method: 'POST',
-      body: { text: bodyText },
-    })
-
-    if (result.ok && result.analysis) {
-      mergeAndSet(
-        analysisToProjectFragments({
-          title: result.analysis.title ?? undefined,
-          characters: result.analysis.characters.map((character) => ({
-            name: character.name,
-            color: character.color ?? undefined,
-          })),
-          beats: result.analysis.beats,
-        }),
-        true,
-      )
-      return
-    }
-
-    // 3. AIが使えない/失敗した場合はヒューリスティック解析にフォールバック
-    mergeAndSet(analysisToProjectFragments(analyzeScriptHeuristically(bodyText)), false)
-  } catch {
-    mergeAndSet(analysisToProjectFragments(analyzeScriptHeuristically(bodyText)), false)
-  } finally {
-    analyzing.value = false
-  }
-}
-
 function apply(): void {
   if (!preview.value || !store.project) return
   const hasExistingContent = store.project.beats.length > 0 || store.project.characters.length > 0
@@ -121,6 +33,10 @@ function apply(): void {
   store.project.characters = [...preview.value.characters]
   store.project.beats = [...preview.value.beats]
   router.push('/editor/all')
+}
+
+function goProfiles(): void {
+  router.push('/editor/profiles')
 }
 </script>
 
@@ -141,7 +57,7 @@ function apply(): void {
           反映時は現在のタイトル・キャラクター・ストーリーを読み込んだ内容で
           置き換えます(音源はそのまま残ります)。
         </p>
-        <form class="import-form" @submit.prevent="analyze">
+        <form class="import-form" @submit.prevent="analyze(text)">
           <input type="file" accept=".txt" @change="onFileChange">
           <textarea v-model="text" rows="14" placeholder="ここに台本を貼り付け…" />
           <button type="submit" :disabled="analyzing || !text.trim()">解析する</button>
@@ -157,9 +73,32 @@ function apply(): void {
         <p class="import-preview-meta">
           キャラクター {{ preview.characters.length }}人 / セリフ・ナレーション {{ preview.beats.length }}件を検出しました。
         </p>
-        <p v-if="mergedProfileCount > 0" class="import-preview-mergeinfo">
-          🪪 台本内の「登場人物リスト」から{{ mergedProfileCount }}人の人物設定を統合しました。
+        <p v-if="breakdown.profileOnlyAdded > 0" class="import-preview-mergeinfo">
+          🪪 台本内の「登場人物リスト」から{{ breakdown.profileOnlyAdded }}人の人物設定を統合しました。
         </p>
+
+        <details class="import-breakdown">
+          <summary>解析内訳を見る</summary>
+          <ul>
+            <li>台本解析で検出したキャラクター: <strong>{{ breakdown.scriptCharacters }}人</strong>(セリフに現れる話者)</li>
+            <li>
+              「登場人物」セクションの検出:
+              <strong>{{ breakdown.profileSectionFound ? '見つかった' : '見つからなかった' }}</strong>
+              <template v-if="breakdown.profileSectionFound">
+                (<code>【登場人物】</code>の見出しから次の<code>【〜】</code>見出しか区切り線までを人物設定として抽出)
+              </template>
+            </li>
+            <li>プロフィール解析で見つけた人物設定: <strong>{{ breakdown.profileEntries }}人</strong></li>
+            <li>台本のキャラと名前が一致して統合(notes補完): <strong>{{ breakdown.mergedEntries }}人</strong></li>
+            <li>プロフィールにしかない新規追加: <strong>{{ breakdown.profileOnlyAdded }}人</strong></li>
+          </ul>
+          <p class="import-breakdown-note">
+            もし想定より人数が多い場合は、台本の中に<code>【登場人物】</code>のような見出しが無く、
+            人物設定と本編セリフの境界を判定できなかった可能性があります。見出しを追加するか、
+            「プロフィール読み込み」画面で人物設定だけを別途読み込んでください。
+          </p>
+        </details>
+
         <ul class="character-list">
           <li v-for="character in preview.characters" :key="character.id" class="character-item">
             <span class="character-swatch" :style="{ background: character.color ?? '#8ec5ff' }" />
@@ -167,6 +106,15 @@ function apply(): void {
           </li>
         </ul>
         <button type="button" class="publish-button" @click="apply">この内容を反映する</button>
+      </section>
+
+      <section v-if="profileSuggestion" class="panel import-suggestion">
+        <p>
+          🪪 このテキストは「セリフのある台本」ではなく<strong>登場人物リスト</strong>のようです
+          ({{ profileSuggestion.count }}人分を検出)。もしそうなら、
+          「プロフィール読み込み」画面から読み込むと<strong>キャラを一括登録</strong>できます。
+        </p>
+        <button type="button" class="publish-button" @click="goProfiles">🪪 プロフィール読み込み画面へ →</button>
       </section>
     </div>
   </div>

@@ -25,7 +25,6 @@ import type { ScriptAnalysis } from './scriptImport'
 const NAME_ONLY_LINE = /^([^\s:：「」『』。、！？…〜を]{1,12})(?:[(（][^)）]*[)）])?$/
 const SAME_LINE_COLON = /^([^\s:：]{1,12})[:：]\s*(.+)$/
 const SAME_LINE_QUOTE = /^([^\s「『]{1,12})[「『](.+)[」』]$/
-const QUOTE_ONLY_LINE = /^[「『](.+)[」』]$/
 
 // 敬称・呼称・よくある役職の接尾辞。長いものから優先的に判定する。
 const NAME_SUFFIXES = [
@@ -94,9 +93,16 @@ export function analyzeScriptHeuristically(text: string): ScriptAnalysis {
     const openMatch = first.match(/^[「『](.*)$/)
     if (!openMatch) return null
 
-    // 単一行で完結する場合
-    const single = first.match(QUOTE_ONLY_LINE)
-    if (single) return { text: single[1]!, endIndex: start }
+    // 開いた行の中に閉じ記号がある場合は、その行だけで完結しているとみなす。
+    // 閉じ記号の後に「バッ」のような擬音・ト書きが続くケースもあるため、
+    // 従来は行末が厳密に閉じ記号で終わる場合しか単一行と判定できず、
+    // 末尾に地の文が続く行は「まだ閉じていない」と誤認して次の行以降を
+    // 延々と巻き込んでいた(次に閉じ記号が現れる行 = 別の話者の別のセリフ
+    // まで1つに結合される事故が実際に起きた。詳細は decisions.md 参照)。
+    const closeOnSameLine = first.match(/^[「『](.*?)[」』]/)
+    if (closeOnSameLine) {
+      return { text: closeOnSameLine[1]!, endIndex: start }
+    }
 
     // 複数行に渡る「」 → 閉じ記号が現れるまで結合する
     const parts: string[] = [openMatch[1]!]
@@ -201,6 +207,20 @@ export function analyzeScriptHeuristically(text: string): ScriptAnalysis {
   })
 
   const characterNames = Array.from(new Set(finalBeats.filter((beat) => beat.speaker !== null).map((beat) => beat.speaker!)))
+
+  // デバッグ用: 名寄せ・頻度フィルタ・集団ラベル除外で何が起きたかを可視化する
+  const droppedForFrequency = Array.from(speakerCounts.entries())
+    .filter(([name, count]) => count < 2 && !NON_PERSON_LABELS.has(name))
+    .map(([name, count]) => `${name}(${count}回)`)
+  const droppedForGroupLabel = Array.from(speakerCounts.keys()).filter((name) => NON_PERSON_LABELS.has(name))
+  const renamed = Array.from(canonicalByRawName.entries()).filter(([raw, canonical]) => raw !== canonical)
+  console.debug(
+    `[analyzeScriptHeuristically] 検出候補${rawNames.size}件 → 採用${characterNames.length}件` +
+      `(頻度不足で除外${droppedForFrequency.length}件 / 集団ラベル除外${droppedForGroupLabel.length}件 / 名寄せ${renamed.length}件)`,
+  )
+  if (droppedForFrequency.length > 0) console.debug('[analyzeScriptHeuristically] 頻度不足で地の文へ格下げ:', droppedForFrequency.join(', '))
+  if (droppedForGroupLabel.length > 0) console.debug('[analyzeScriptHeuristically] 集団ラベルとして除外:', droppedForGroupLabel.join(', '))
+  if (renamed.length > 0) console.debug('[analyzeScriptHeuristically] 名寄せ:', renamed.map(([raw, canonical]) => `${raw}→${canonical}`).join(', '))
 
   return {
     characters: characterNames.map((name) => ({ name })),

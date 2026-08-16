@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { compileProject } from '#shared/domain/project/compile'
 import { createEmptyProject } from '#shared/domain/project/types'
 import type { Project } from '#shared/domain/project/types'
 
@@ -7,7 +6,6 @@ const PUBLISHED_ID_KEY = 'novelgame:publishedProjectId'
 const EXPORT_VERSION = 1
 
 const store = useProjectStore()
-const errors = ref<string[] | null>(null)
 const publishMessage = ref<string | null>(null)
 const publishing = ref(false)
 const ioMessage = ref<string | null>(null)
@@ -15,20 +13,11 @@ const importInput = ref<HTMLInputElement | null>(null)
 const router = useRouter()
 const user = useSupabaseUser()
 
+const { showNoScriptDialog, compileErrors: errors, goToPreview } = useGoToPreview()
+
 onMounted(() => {
   void store.load()
 })
-
-function goPlay(): void {
-  if (!store.project) return
-  const result = compileProject(store.project)
-  if (!result.ok) {
-    errors.value = result.errors
-    return
-  }
-  errors.value = null
-  router.push('/play/local')
-}
 
 async function publish(): Promise<void> {
   if (!store.project) return
@@ -117,7 +106,9 @@ async function onImportFile(event: Event): Promise<void> {
 <template>
   <div v-if="store.project" class="editor">
     <header class="editor-header">
-      <img class="editor-mascot" src="/usagiicon1.png" alt="">
+      <NuxtLink to="/start" class="editor-mascot-link" title="タイトル画面に戻る">
+        <img class="editor-mascot" src="/usagiicon1.png" alt="タイトル画面に戻る">
+      </NuxtLink>
       <input v-model="store.project.title" type="text" class="title-input" placeholder="タイトル">
       <NuxtLink to="/">ギャラリー</NuxtLink>
       <button type="button" class="io-button" title="プロジェクトをJSONファイルとして書き出す" @click="exportProject">
@@ -131,8 +122,10 @@ async function onImportFile(event: Event): Promise<void> {
       <button v-else type="button" class="publish-button" :disabled="publishing" @click="publish">
         {{ publishing ? '公開中…' : '公開する' }}
       </button>
-      <button type="button" class="play-button" @click="goPlay">プレイ</button>
+      <button type="button" class="play-button" @click="goToPreview">プレイ</button>
     </header>
+
+    <NoScriptDialog v-if="showNoScriptDialog" @close="showNoScriptDialog = false" />
 
     <div v-if="errors" class="error-banner">
       <p>プレイする前に、以下を直してください:</p>

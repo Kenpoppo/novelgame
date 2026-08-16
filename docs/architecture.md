@@ -11,7 +11,7 @@ Webサービスへ移行した。
 
 ```
 ブラウザ(Nuxt/Vue, presentation層)
-  ├─ /editor              … メイン画面(タイトル入力+プレイ/公開+5つの設定画面への入口)
+  ├─ /editor              … メイン画面(タイトル入力+プレイ/公開+7つの設定画面への入口タイル)
   │   ├─ /editor/characters … キャラクター設定(独立ページ)
   │   ├─ /editor/audio       … 音源(BGM/SE)設定(独立ページ)
   │   ├─ /editor/story       … ストーリー編集(独立ページ)
@@ -23,6 +23,7 @@ Webサービスへ移行した。
   ├─ /                     … 公開作品ギャラリー
   ├─ /play/[id]             … 公開作品をプレイ(誰でも・ログイン不要)
   ├─ /login                … 作者ログイン(公開する場合のみ必要)
+  ├─ /start                … 初回セットアップ用オンボーディングウィザード
   └─ /confirm              … メール確認/OAuthコールバックの着地点
         │
         │ $fetch / useFetch
@@ -33,12 +34,12 @@ Nitroサーバー(server/api/**、application層の薄いHTTPアダプタ)
         └─▶ Anthropic API(台本のAI解析、ANTHROPIC_API_KEY設定時のみ)
 ```
 
-`/editor` はキャラ/音源/ストーリーの編集フォームを直接置かず、3つの設定画面への
-入り口(大きなタイル)だけを表示するシンプルなメイン画面にしている
-(`CharacterPanel`/`AudioPanel`/`StoryPanel` の各Vueコンポーネント自体は
-変更せず、それぞれ専用ページ `/editor/characters` 等に1つだけ配置する形)。
-どのページからでも同じ `useProjectStore()`(Pinia)を参照するため、画面を
-移動してもデータは共有・自動保存される。
+`/editor` はキャラ/音源/ストーリー等の編集フォームを直接置かず、
+7つの設定画面への入口(大きなタイル)だけを表示するシンプルなメイン画面に
+している(`CharacterPanel`/`AudioPanel`/`StoryPanel` 等の各Vueコンポーネント
+自体は変更せず、それぞれ専用ページ `/editor/characters` 等に1つだけ配置する
+形)。どのページからでも同じ `useProjectStore()`(Pinia)を参照するため、
+画面を移動してもデータは共有・自動保存される。
 
 ## レイヤー構成(Clean Architecture、簡略版)
 
@@ -47,8 +48,10 @@ shared/domain/        フレームワーク非依存の純粋TS。台本の型�
                        Project/Beatのデータモデル・compileProject・
                        scriptImport(台本解析結果をProject断片へ変換する
                        共通ロジック、AI/ヒューリスティック/自前DSLの3経路が
-                       ここで合流する)・heuristicAnalyzer(書式が様々な
-                       台本テキストから話者・セリフを検出するルールベース
+                       ここで合流する)・profileImport(【登場人物】セクションの
+                       名前+人物設定ブロック抽出、mergeProfilesIntoCharacters
+                       での台本キャラとの名寄せ)・heuristicAnalyzer(書式が
+                       様々な台本テキストから話者・セリフを検出するルールベース
                        解析ライブラリ)。クライアント/サーバー両方から
                        #shared/domain/... で参照する(Nuxt 4 の shared/ 機能)。
 
@@ -74,16 +77,38 @@ app/                   Nuxtの規約に沿った presentation層(srcDir)。
   pages/                  ファイルベースルーティング。
                         editor/index.vue はメイン画面(タイルメニューのみ)、
                         editor/{characters,audio,story}.vue が各設定の
-                        独立ページ、editor/import.vue が台本読み込み、
-                        editor/all.vue が全設定を1画面にまとめた詳細設定。
-  components/             editor/*.vue(CharacterPanel/AudioPanel/StoryPanel
-                        は各設定ページ・詳細設定ページの両方から使い回す
-                        フォームUI、SubPageHeaderは設定ページ共通の
-                        「← 戻る」ヘッダー、PopLoadingはポップな全画面
-                        ローディング表示)、player/*.vue(ステージ・台詞・
-                        選択肢の表示)。
-  composables/             usePlayback など、Vueの reactivity と
-                        domain(ScriptVM)・infrastructure(Howler)を薄く繋ぐ。
+                        独立ページ、editor/branches.vue が選択肢・分岐
+                        (ストーリー展開)エディタ、editor/import.vue が
+                        台本読み込み、editor/profiles.vue が登場人物リスト
+                        単体の読み込み、editor/all.vue が全設定を1画面に
+                        まとめた詳細設定、start.vue が初回セットアップ用
+                        オンボーディングウィザード(台本読み込み/登場人物
+                        リスト読み込み/一から作る、の3ルート)。
+  components/             editor/*.vue(CharacterPanel/AudioPanel/StoryPanel/
+                        BackgroundPanel は各設定ページ・詳細設定ページの
+                        両方から使い回すフォームUI、TtsPanelはTTS読み上げ
+                        設定、SubPageHeaderは設定ページ共通の「← 戻る」
+                        ヘッダー、PopLoadingはポップな全画面ローディング
+                        表示、PreviewButtonは各設定ページ共通のプレビュー
+                        導線、NoScriptDialogは台本が無い状態でプレイ/
+                        プレビューしようとした時の案内モーダル、
+                        BulkImageImportは複数画像のファイル名一致による
+                        キャラ/背景への一括割り当て、WizardStepBarは
+                        /start のステップ進行インジケータ)、
+                        player/*.vue(ステージ・台詞・選択肢の表示、
+                        CastListPanelはプレイ画面右上の登場人物リスト。
+                        詳細は player.md)。
+  composables/             usePlayback(domain(ScriptVM)・infrastructure
+                        (Howler)をVueのreactivityに薄く繋ぐ)、
+                        useScriptImportAnalysis(台本読み込み機能の解析
+                        ロジック本体。editor/import.vue と start.vue の
+                        両方から呼ぶ共通実装 — 詳細は script-import.md)、
+                        useGoToPreview(プレイ/プレビュー導線の共通ガード。
+                        台本が無ければNoScriptDialogを出す。4箇所の画面から
+                        共通で呼ぶ)、useVoicevoxDetection(起動時に
+                        VOICEVOXエンジンの `/speakers` を叩いて起動を検出。
+                        TtsPanel/CharacterPanel で「ワンクリック有効化」
+                        バナーを出すのに使う)。
   stores/(Pinia)          useProjectStore — 編集中Projectの状態と自動保存。
                         どのページからでも同じインスタンスを参照する。
 
@@ -140,10 +165,14 @@ supabase/migrations/   テーブル定義・RLSポリシーのSQL。
   (`server/api/projects` は複数管理APIを持つが、エディタUIはローカルの
   単一下書きを公開する導線のみ)。
 - ゲーム内セーブ(プレイ再開)のUIは未実装(`game_saves` テーブルのみ用意済み)。
-- アニメーション演出(GSAP)は未導入。
-- 立ち絵・背景画像の本格的な演出(位置指定・切り替え等)は未実装。
-  発言キャラクターの小さな丸アバター表示のみ対応(`DialogueBox.vue`)。
-- 台本の自動読み込み(`/editor/import`)は台詞・地の文・キャラクターのみを
-  検出し、選択肢や分岐は自動設定されない(読み込み後に手動で追加する)。
+- アニメーション演出(GSAP等)は未導入(フェード等のトランジションは
+  CSSのみ)。
+- 立ち絵は左右2スロット(発話中の側を明るく、非発話側を暗く)+ 画像A/B
+  切り替え(表情・ポーズ違い)まで対応。細かい位置指定・複数キャラの
+  同時演出等は未実装。背景は `BackgroundAsset` + `dialogue.backgroundId`
+  でシーンごとに切り替え可能。
+- 台本の自動読み込み(`/editor/import`)は台詞・地の文・キャラクター(および
+  「登場人物」セクションからの人物設定)のみを検出し、選択肢や分岐は自動
+  設定されない(読み込み後に `/editor/branches` で手動追加する)。
 - メール確認/OAuthコールバック用の `/confirm` ページは最小限の実装
   (ログイン検知してエディタへ飛ばすのみ)。

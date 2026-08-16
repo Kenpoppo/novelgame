@@ -3,6 +3,7 @@ import { indexedDbProjectRepository } from '../../../infrastructure/local/indexe
 import { VoicevoxTts } from '../../../infrastructure/tts/voicevoxTts'
 import { WebSpeechTts } from '../../../infrastructure/tts/webspeechTts'
 import type { TtsService, TtsVoice } from '../../../infrastructure/tts/ttsService'
+import { createDefaultTtsConfig } from '#shared/domain/project/types'
 import type { CharacterAsset } from '#shared/domain/project/types'
 
 const store = useProjectStore()
@@ -122,8 +123,23 @@ async function refreshTtsVoices(): Promise<void> {
   }
 }
 
+// tts設定を有効化していなくても、VOICEVOXが起動していればここで検出して
+// ワンクリックで話者選択を使えるようにする
+const voicevox = useVoicevoxDetection()
+
+function useVoicevoxNow(): void {
+  if (!store.project) return
+  if (!store.project.tts) {
+    store.project.tts = createDefaultTtsConfig()
+  }
+  store.project.tts.enabled = true
+  store.project.tts.engine = 'voicevox'
+  void refreshTtsVoices()
+}
+
 onMounted(() => {
   void refreshTtsVoices()
+  void voicevox.check(store.project?.tts?.voicevoxUrl)
 })
 
 watch(
@@ -146,7 +162,12 @@ async function testTtsVoice(character: CharacterAsset): Promise<void> {
 
 function onImageChange(event: Event): void {
   const input = event.target as HTMLInputElement
-  imageFile.value = input.files?.[0] ?? null
+  const selected = input.files?.[0] ?? null
+  imageFile.value = selected
+  // 名前が未入力なら、画像のファイル名(拡張子なし)を仮の表示名にする
+  if (selected && !name.value.trim()) {
+    name.value = selected.name.replace(/\.[^./\\]+$/, '')
+  }
 }
 
 function onVoiceChange(event: Event): void {
@@ -272,6 +293,14 @@ onUnmounted(() => {
   <section class="panel">
     <h2>キャラクター <span class="beat-count">({{ store.project?.characters.length ?? 0 }}人)</span></h2>
 
+    <p
+      v-if="voicevox.available.value && !(store.project?.tts?.enabled && store.project.tts.engine === 'voicevox')"
+      class="character-voicevox-hint"
+    >
+      🎙️ VOICEVOXの起動を検出しました。
+      <button type="button" @click="useVoicevoxNow">話者を選べるようにする →</button>
+    </p>
+
     <input
       v-if="(store.project?.characters.length ?? 0) > 5"
       v-model="filterQuery"
@@ -282,7 +311,7 @@ onUnmounted(() => {
 
     <ul class="character-list">
       <li
-        v-for="character in filteredCharacters"
+        v-for="(character, index) in filteredCharacters"
         :key="character.id"
         class="character-item"
         :class="{ 'character-item--drag-over': charDragOver === character.id, 'character-item--dragging': charDragFrom === character.id }"
@@ -293,6 +322,7 @@ onUnmounted(() => {
         @dragend="onCharDragEnd"
       >
         <div class="character-item-main">
+          <span class="character-index">#{{ index + 1 }}</span>
           <img v-if="character.imageDataUrl" class="character-thumb" :src="character.imageDataUrl" alt="A">
           <img v-if="character.imageAltDataUrl" class="character-thumb character-thumb--alt" :src="character.imageAltDataUrl" alt="B">
           <span class="character-swatch" :style="{ background: character.color ?? '#8ec5ff' }" />

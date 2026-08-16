@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import { compileProject } from '#shared/domain/project/compile'
-
 const store = useProjectStore()
-const router = useRouter()
-const errors = ref<string[] | null>(null)
+
+const { showNoScriptDialog, compileErrors: errors, goToPreview } = useGoToPreview()
 
 onMounted(() => {
   void store.load()
@@ -18,26 +16,17 @@ const choiceCount = computed(
 const jumpCount = computed(
   () => (store.project?.beats ?? []).filter((beat) => beat.type === 'jump').length,
 )
-
-function goPlay(): void {
-  if (!store.project) return
-  const result = compileProject(store.project)
-  if (!result.ok) {
-    errors.value = result.errors
-    return
-  }
-  errors.value = null
-  router.push('/play/local')
-}
 </script>
 
 <template>
   <div v-if="store.project" class="editor">
     <SubPageHeader title="ストーリー展開(選択肢・分岐)">
       <template #actions>
-        <button type="button" class="play-button play-button--compact" @click="goPlay">プレビュー →</button>
+        <button type="button" class="play-button play-button--compact" @click="goToPreview">プレビュー →</button>
       </template>
     </SubPageHeader>
+
+    <NoScriptDialog v-if="showNoScriptDialog" @close="showNoScriptDialog = false" />
 
     <div class="subpage-body subpage-body--wide">
       <section class="panel branches-intro">
@@ -69,7 +58,7 @@ function goPlay(): void {
 
       <div class="branches-footer">
         <NuxtLink to="/editor/all" class="branches-back">← 詳細設定へ戻る</NuxtLink>
-        <button type="button" class="play-button" @click="goPlay">プレビューする →</button>
+        <button type="button" class="play-button" @click="goToPreview">プレビューする →</button>
       </div>
     </div>
   </div>

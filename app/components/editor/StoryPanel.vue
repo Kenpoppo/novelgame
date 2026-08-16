@@ -32,9 +32,10 @@ function jumpByNumber(): void {
   jumpToBeat(clamped - 1)
 }
 
-function characterHasAlt(characterId: string): boolean {
+/** 画像A・画像Bの両方が設定されている(=選ぶ意味がある)かどうか。 */
+function characterHasBothImages(characterId: string): boolean {
   const character = store.project?.characters.find((c) => c.id === characterId)
-  return !!character?.imageAltDataUrl
+  return !!character?.imageDataUrl && !!character?.imageAltDataUrl
 }
 
 /**
@@ -140,7 +141,8 @@ function removeOption(beat: Extract<Beat, { type: 'choice' }>, index: number): v
   beat.options.splice(index, 1)
 }
 
-function addBeat(type: Beat['type']): void {
+/** `atIndex` を指定するとその位置に挿入し、省略すると末尾に追加する。 */
+function addBeat(type: Beat['type'], atIndex?: number): void {
   if (!store.project) return
   const project = store.project
   const id = crypto.randomUUID()
@@ -170,7 +172,24 @@ function addBeat(type: Beat['type']): void {
       break
   }
 
-  project.beats.push(beat)
+  if (atIndex === undefined) {
+    project.beats.push(beat)
+  } else {
+    project.beats.splice(atIndex, 0, beat)
+  }
+}
+
+// ── ビート間への挿入(セリフが大量にある台本の途中に1つ差し込みたい時用) ──
+// 「末尾に追加してから並び替えボタンやドラッグで何十行も動かす」手間を無くす。
+const insertMenuOpenAt = ref<number | null>(null)
+
+function toggleInsertMenu(index: number): void {
+  insertMenuOpenAt.value = insertMenuOpenAt.value === index ? null : index
+}
+
+function insertBeatAt(type: Beat['type'], index: number): void {
+  addBeat(type, index)
+  insertMenuOpenAt.value = null
 }
 </script>
 
@@ -197,18 +216,31 @@ function addBeat(type: Beat['type']): void {
     </nav>
 
     <ol class="beat-list">
-      <li
-        v-for="(beat, index) in store.project?.beats ?? []"
-        :key="beat.id"
-        :id="beatDomId(index)"
-        class="beat"
-        :class="[`beat-${beat.type}`, { 'beat--drag-over': dragOver === index, 'beat--dragging': dragFrom === index }]"
-        draggable="true"
-        @dragstart="onDragStart(index, $event)"
-        @dragover="onDragOver(index, $event)"
-        @drop="onDrop(index, $event)"
-        @dragend="onDragEnd"
-      >
+      <template v-for="(beat, index) in store.project?.beats ?? []" :key="beat.id">
+        <li class="beat-insert-slot">
+          <button type="button" class="beat-insert-toggle" title="この位置に挿入" @click="toggleInsertMenu(index)">
+            {{ insertMenuOpenAt === index ? '×' : '+' }}
+          </button>
+          <div v-if="insertMenuOpenAt === index" class="beat-insert-menu">
+            <button type="button" @click="insertBeatAt('dialogue', index)">+ 台詞</button>
+            <button type="button" @click="insertBeatAt('label', index)">+ ラベル</button>
+            <button type="button" @click="insertBeatAt('jump', index)">+ ジャンプ</button>
+            <button type="button" @click="insertBeatAt('choice', index)">+ 選択肢</button>
+            <button type="button" @click="insertBeatAt('bgm', index)">+ BGM</button>
+            <button type="button" @click="insertBeatAt('se', index)">+ SE</button>
+            <button type="button" @click="insertBeatAt('background', index)">+ 背景</button>
+          </div>
+        </li>
+        <li
+          :id="beatDomId(index)"
+          class="beat"
+          :class="[`beat-${beat.type}`, { 'beat--drag-over': dragOver === index, 'beat--dragging': dragFrom === index }]"
+          draggable="true"
+          @dragstart="onDragStart(index, $event)"
+          @dragover="onDragOver(index, $event)"
+          @drop="onDrop(index, $event)"
+          @dragend="onDragEnd"
+        >
         <div class="beat-controls">
           <span class="beat-drag-handle" title="ドラッグして並び替え">⋮⋮</span>
           <span class="beat-index">#{{ index + 1 }}</span>
@@ -230,11 +262,17 @@ function addBeat(type: Beat['type']): void {
             <textarea v-model="beat.text" rows="2" placeholder="セリフ・ナレーション" />
             <div class="beat-scene-options">
               <label
-                v-if="beat.characterId && characterHasAlt(beat.characterId)"
+                v-if="beat.characterId && characterHasBothImages(beat.characterId)"
                 class="beat-image-toggle"
               >
-                <input v-model="beat.useAltImage" type="checkbox">
-                画像B(別ポーズ/表情)を使う
+                <span>画像</span>
+                <select
+                  :value="beat.useAltImage ? 'alt' : 'main'"
+                  @change="beat.useAltImage = ($event.target as HTMLSelectElement).value === 'alt'"
+                >
+                  <option value="main">画像A</option>
+                  <option value="alt">画像B(別ポーズ/表情)</option>
+                </select>
               </label>
               <label class="beat-bg-selector">
                 <span>背景</span>
@@ -317,7 +355,8 @@ function addBeat(type: Beat['type']): void {
             </select>
           </template>
         </div>
-      </li>
+        </li>
+      </template>
     </ol>
 
     <div class="beat-toolbar">

@@ -34,6 +34,10 @@ const KEY_COLOR = /^(?:色|Color)\s*[:：]\s*(#?[0-9a-f]{3,8})\s*$/i
 const KEY_NOTES = /^(?:プロフィール|人物設定|説明|Profile|Description|Note|Notes)\s*[:：]\s*(.*)$/i
 const INLINE_COLOR = /#[0-9a-f]{3,8}\b/i
 const NAME_DECORATION = /^[【\[■◆●○▲△▼▽◇♦♢★☆・*\-]+\s*(.+?)\s*[】\]]*$/
+// 句読点や記号を含まない短い行(=素の名前らしい行)。「ラジオ局」「職員」の
+// ように役職/カテゴリの見出しが、空行を挟まず本当の名前の直前に書かれている
+// ケースに対応するため使う(下記ループのコメント参照)。
+const BARE_NAME_CANDIDATE = /^[^\s:：「」『』。、！？…〜]{1,12}$/
 
 // 個人名として扱わない汎用語(章タイトル・組織名・役職名・集団ラベル)。
 // 明示的に「名前:」キーが指定されていない場合のみ適用する
@@ -155,13 +159,24 @@ export function parseProfileTextWithDiagnostics(input: string): ProfileParseDiag
         if (rest) notesLines.push(rest)
         continue
       }
-      if (!name) {
+      // 名前がまだ無い場合、または(説明文がまだ始まっておらず)この行も
+      // 「素の名前らしい短い行」に見える場合は、名前候補をこの行で更新する。
+      // 実サンプルで「ラジオパーソナリティ」(役職の見出し)の直後に
+      // 空行を挟まず「DJヤチ」(本当の名前)が続く記法があり、旧実装では
+      // 最初の行だけを名前として確定させていたため、2行目以降がすべて
+      // 「ラジオパーソナリティ」の notes として吸収され、かつ
+      // 「ラジオパーソナリティ」自体はNON_CHARACTER_TERMSに含まれるため
+      // ブロックごと(=本来のDJヤチのプロフィールごと)捨てられていた。
+      if (!name || (notesLines.length === 0 && BARE_NAME_CANDIDATE.test(line))) {
         const decoratedMatch = line.match(NAME_DECORATION)
         let candidate = (decoratedMatch?.[1] ?? line).trim()
         const inlineColor = candidate.match(INLINE_COLOR)
         if (inlineColor) {
           color = color ?? normalizeColor(inlineColor[0])
           candidate = candidate.replace(inlineColor[0], '').trim()
+        }
+        if (name && name !== candidate) {
+          console.debug(`[parseProfileText] 名前候補を更新: 「${name}」→「${candidate}」(空行を挟まず短い行が連続したため)`)
         }
         name = candidate
         continue
@@ -194,5 +209,16 @@ export function parseProfileTextWithDiagnostics(input: string): ProfileParseDiag
     })
   }
 
+  console.debug(
+    `[parseProfileText] ${blocks.length}ブロック → 採用${entries.length}件 / スキップ${skipped.length}件` +
+      (skipped.length > 0 ? `(理由内訳: ${summarizeSkipReasons(skipped)})` : ''),
+  )
+
   return { entries, skipped }
+}
+
+function summarizeSkipReasons(skipped: { reason: string }[]): string {
+  const counts = new Map<string, number>()
+  for (const s of skipped) counts.set(s.reason, (counts.get(s.reason) ?? 0) + 1)
+  return Array.from(counts.entries()).map(([reason, count]) => `${reason}×${count}`).join(', ')
 }

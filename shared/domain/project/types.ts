@@ -83,3 +83,12 @@ export function createId(): string {
 export function createEmptyProject(title = '無題のストーリー'): Project {
   return { title, characters: [], audio: [], backgrounds: [], beats: [] }
 }
+
+export function createDefaultTtsConfig(): TtsConfig {
+  return {
+    enabled: false,
+    engine: 'webspeech',
+    voicevoxUrl: 'http://localhost:50021',
+    narrateNarration: true,
+  }
+}

@@ -1,14 +1,7 @@
 <script setup lang="ts">
-import { parseScript } from '#shared/domain/parser'
-import {
-  analysisToProjectFragments,
-  analyzeScriptHeuristically,
-  dslResultToAnalysis,
-  mergeProfilesIntoCharacters,
-} from '#shared/domain/project/scriptImport'
 import { parseProfileText } from '#shared/domain/project/profileImport'
 import { createEmptyProject } from '#shared/domain/project/types'
-import type { Beat, CharacterAsset } from '#shared/domain/project/types'
+import type { CharacterAsset } from '#shared/domain/project/types'
 
 type Step =
   | 'title'
@@ -21,30 +14,22 @@ type Step =
 
 const PALETTE = ['#4fc3f7', '#f48fb1', '#aed581', '#ffb74d', '#ba68c8', '#4db6ac', '#7986cb', '#ff8a65']
 
-interface AnalyzeResponse {
-  ok: boolean
-  reason?: string
-  analysis?: {
-    title: string | null
-    characters: { name: string; color: string | null }[]
-    beats: { speaker: string | null; text: string }[]
-  }
-}
-
 const store = useProjectStore()
 const router = useRouter()
 
 const step = ref<Step>('title')
 
-// import ルート用の状態
+// import ルート用の状態(解析ロジック本体は useScriptImportAnalysis に集約)
 const scriptText = ref('')
-const analyzing = ref(false)
-const importError = ref<string | null>(null)
-const importPreview = ref<{ title?: string; characters: CharacterAsset[]; beats: Beat[]; usedAi: boolean } | null>(null)
-// 台本モードで解析したが「プロフィールっぽい」と判定した時のヒント。
-const profileSuggestion = ref<{ count: number } | null>(null)
-// 台本モードで解析した際、プロフィールを混合統合できた人数(統合完了メッセージ用)。
-const mergedProfileCount = ref(0)
+const {
+  analyzing,
+  errorMessage: importError,
+  preview: importPreview,
+  breakdown: importBreakdown,
+  profileSuggestion,
+  analyze: runScriptAnalysis,
+} = useScriptImportAnalysis()
+const mergedProfileCount = computed(() => importBreakdown.value.profileOnlyAdded)
 
 // プロフィール読み込みルート用の状態
 const profileText = ref('')
@@ -132,79 +117,7 @@ function onScriptFileChange(event: Event): void {
 }
 
 async function analyzeScript(): Promise<void> {
-  if (!scriptText.value.trim()) return
-  analyzing.value = true
-  importError.value = null
-  importPreview.value = null
-  profileSuggestion.value = null
-  mergedProfileCount.value = 0
-
-  // タイトル抽出: 最初の非空行をタイトルとして扱う
-  const lines = scriptText.value.split(/\r?\n/)
-  const titleLineIndex = lines.findIndex((line) => line.trim().length > 0)
-  const firstLineTitle = titleLineIndex >= 0 ? lines[titleLineIndex]!.trim() : ''
-  const bodyText = titleLineIndex >= 0 ? lines.slice(titleLineIndex + 1).join('\n') : scriptText.value
-
-  // 全文に対してプロフィール解析も走らせる。台本と混在していれば人物設定を統合する。
-  const profileEntries = parseProfileText(scriptText.value)
-
-  try {
-    // まずDSL(自前フォーマット)を試す
-    const parsed = parseScript(bodyText)
-    const namedDialogueCount = parsed.instructions.filter(
-      (instruction) => instruction.type === 'dialogue' && instruction.speaker !== null,
-    ).length
-    if (namedDialogueCount >= 2) {
-      const fragments = analysisToProjectFragments(dslResultToAnalysis(parsed))
-      const before = fragments.characters.length
-      fragments.characters = mergeProfilesIntoCharacters(fragments.characters, profileEntries)
-      mergedProfileCount.value = fragments.characters.length - before
-      importPreview.value = { ...fragments, title: firstLineTitle || fragments.title, usedAi: false }
-      return
-    }
-
-    // AI解析を試す
-    const result = await $fetch<AnalyzeResponse>('/api/import/analyze', {
-      method: 'POST',
-      body: { text: bodyText },
-    })
-    if (result.ok && result.analysis) {
-      const fragments = analysisToProjectFragments({
-        title: result.analysis.title ?? undefined,
-        characters: result.analysis.characters.map((c) => ({ name: c.name, color: c.color ?? undefined })),
-        beats: result.analysis.beats,
-      })
-      const before = fragments.characters.length
-      fragments.characters = mergeProfilesIntoCharacters(fragments.characters, profileEntries)
-      mergedProfileCount.value = fragments.characters.length - before
-      importPreview.value = { ...fragments, title: firstLineTitle || fragments.title, usedAi: true }
-    } else {
-      // ヒューリスティックにフォールバック
-      const fragments = analysisToProjectFragments(analyzeScriptHeuristically(bodyText))
-      const before = fragments.characters.length
-      fragments.characters = mergeProfilesIntoCharacters(fragments.characters, profileEntries)
-      mergedProfileCount.value = fragments.characters.length - before
-      importPreview.value = { ...fragments, title: firstLineTitle || fragments.title, usedAi: false }
-    }
-
-    // 台本として解析したがキャラが少なく、プロフィール形式として読める場合はヒント。
-    // 「セリフ「」がほぼ含まれない登場人物リスト」を投げ入れた時のフォロー。
-    if (
-      importPreview.value &&
-      importPreview.value.beats.filter((b) => b.type === 'dialogue' && (b as { characterId: string | null }).characterId).length < 2 &&
-      profileEntries.length >= 3
-    ) {
-      profileSuggestion.value = { count: profileEntries.length }
-    }
-  } catch {
-    const fragments = analysisToProjectFragments(analyzeScriptHeuristically(bodyText))
-    const before = fragments.characters.length
-    fragments.characters = mergeProfilesIntoCharacters(fragments.characters, profileEntries)
-    mergedProfileCount.value = fragments.characters.length - before
-    importPreview.value = { ...fragments, title: firstLineTitle || fragments.title, usedAi: false }
-  } finally {
-    analyzing.value = false
-  }
+  await runScriptAnalysis(scriptText.value)
 }
 
 function switchToProfileMode(): void {
@@ -258,9 +171,7 @@ function goEditor(): void {
   router.push('/editor/all')
 }
 
-function goPreview(): void {
-  router.push('/play/local')
-}
+const { showNoScriptDialog, goToPreview: goPreview } = useGoToPreview()
 
 function goMenu(): void {
   router.push('/editor')
@@ -273,6 +184,8 @@ function backTo(target: Step): void {
 
 <template>
   <div class="wizard">
+    <NoScriptDialog v-if="showNoScriptDialog" @close="showNoScriptDialog = false" />
+
     <!-- Step 1: タイトル画面 -->
     <section v-if="step === 'title'" class="wizard-hero">
       <img class="wizard-hero-mascot" src="/usagiicon1.png" alt="ヘッドホンウサギ">
@@ -334,11 +247,41 @@ function backTo(target: Step): void {
         <h3>解析結果 ({{ importPreview.usedAi ? 'AI解析' : '簡易解析' }})</h3>
         <p v-if="importPreview.title" class="wizard-preview-title">タイトル: <strong>{{ importPreview.title }}</strong></p>
         <p class="wizard-preview-meta">
-          キャラ {{ importPreview.characters.length }}人 / セリフ {{ importPreview.beats.length }}件を検出しました。
+          <details class="wizard-char-count">
+            <summary>キャラ {{ importPreview.characters.length }}人</summary>
+            <ul class="wizard-char-count-list">
+              <li v-for="character in importPreview.characters" :key="character.id">
+                <span class="wizard-char-count-swatch" :style="{ background: character.color ?? '#8ec5ff' }" />
+                {{ character.name }}
+              </li>
+            </ul>
+          </details>
+          <span>/ セリフ {{ importPreview.beats.length }}件を検出しました。</span>
         </p>
         <p v-if="mergedProfileCount > 0" class="wizard-preview-mergeinfo">
           🪪 台本内の「登場人物リスト」から{{ mergedProfileCount }}人の人物設定を統合しました。
         </p>
+        <details class="wizard-preview-details">
+          <summary>解析内訳を見る</summary>
+          <ul>
+            <li>台本解析で検出したキャラクター: <strong>{{ importBreakdown.scriptCharacters }}人</strong>（セリフに現れる話者）</li>
+            <li>
+              「登場人物」セクションの検出:
+              <strong>{{ importBreakdown.profileSectionFound ? '見つかった' : '見つからなかった' }}</strong>
+              <template v-if="importBreakdown.profileSectionFound">
+                （<code>【登場人物】</code>の見出しから次の <code>【〜】</code> 見出しか区切り線までを人物設定として抽出）
+              </template>
+            </li>
+            <li>プロフィール解析で見つけた人物設定: <strong>{{ importBreakdown.profileEntries }}人</strong></li>
+            <li>台本のキャラと名前が一致して統合(notes補完): <strong>{{ importBreakdown.mergedEntries }}人</strong></li>
+            <li>プロフィールにしかない新規追加: <strong>{{ importBreakdown.profileOnlyAdded }}人</strong></li>
+          </ul>
+          <p class="wizard-preview-details-note">
+            もし想定より人数が多い場合は、台本の中で <code>【登場人物】</code> のような見出しが無く、
+            プロフィールと本編セリフの境界を判定できなかった可能性があります。
+            見出しを追加するか、モード選択に戻って「一から作る」を選んでください。
+          </p>
+        </details>
         <button type="button" class="wizard-primary" @click="applyImport">この内容で作成する →</button>
       </section>
 
@@ -713,6 +656,70 @@ function backTo(target: Step): void {
   margin: 0;
   font-size: 13px;
   font-weight: 600;
+}
+
+.wizard-preview-meta {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+}
+
+.wizard-char-count {
+  display: inline-block;
+}
+
+.wizard-char-count summary {
+  cursor: pointer;
+  font-weight: 800;
+  color: var(--brand-water-dark);
+  list-style: none;
+}
+
+.wizard-char-count summary::-webkit-details-marker {
+  display: none;
+}
+
+.wizard-char-count summary::after {
+  content: ' ▾';
+  font-size: 11px;
+}
+
+.wizard-char-count[open] summary::after {
+  content: ' ▴';
+}
+
+.wizard-char-count summary:hover {
+  text-decoration: underline;
+}
+
+.wizard-char-count-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  max-height: 220px;
+  overflow-y: auto;
+  background: #fff;
+  border: 2px solid var(--pop-ink);
+  border-radius: var(--pop-radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: 700;
+}
+
+.wizard-char-count-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wizard-char-count-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--pop-ink);
+  flex-shrink: 0;
 }
 
 .wizard-preview-mergeinfo {

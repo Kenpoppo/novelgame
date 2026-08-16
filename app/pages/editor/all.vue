@@ -20,6 +20,8 @@ onMounted(() => {
       <label class="all-settings-title-label" for="all-settings-title">タイトル</label>
       <input id="all-settings-title" v-model="store.project.title" type="text" class="title-input all-settings-title-input" placeholder="タイトル">
 
+      <BulkImageImport />
+
       <div class="all-settings-layout">
         <aside class="all-settings-sidebar">
           <CharacterPanel />

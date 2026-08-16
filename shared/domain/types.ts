@@ -10,6 +10,8 @@ export interface CharacterDef {
   ttsVoice?: string
   ttsRate?: number
   ttsPitch?: number
+  // 人物設定(一人称・口調・背景など)。プレイ画面右上の登場人物リストで表示する。
+  notes?: string
 }
 
 export type Instruction =

@@ -60,6 +60,7 @@ npm run typecheck   # 型チェック(vue-tsc)
 - [docs/audio-sources.md](docs/audio-sources.md) — BGM/SEのフリー素材サイト
 - [docs/setup-supabase.md](docs/setup-supabase.md) — Supabaseセットアップ手順
 - [docs/script-import.md](docs/script-import.md) — 台本の自動読み込み(AI解析)
+- [docs/player.md](docs/player.md) — プレイ画面の構成(登場人物リスト・TTS等)
 - [docs/decisions.md](docs/decisions.md) — 設計判断ログ
 
 方針や構成を変えたら、該当ドキュメントの更新を `docs/decisions.md` への

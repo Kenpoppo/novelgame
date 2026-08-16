@@ -2,6 +2,7 @@
 import { VoicevoxTts } from '../../../infrastructure/tts/voicevoxTts'
 import { WebSpeechTts } from '../../../infrastructure/tts/webspeechTts'
 import type { TtsService, TtsVoice } from '../../../infrastructure/tts/ttsService'
+import { createDefaultTtsConfig } from '#shared/domain/project/types'
 
 const store = useProjectStore()
 
@@ -9,18 +10,24 @@ const store = useProjectStore()
 function ensureTts(): void {
   if (!store.project) return
   if (!store.project.tts) {
-    store.project.tts = {
-      enabled: false,
-      engine: 'webspeech',
-      voicevoxUrl: 'http://localhost:50021',
-      narrateNarration: true,
-    }
+    store.project.tts = createDefaultTtsConfig()
   }
 }
 
 const voices = ref<TtsVoice[]>([])
 const loading = ref(false)
 const voicesError = ref<string | null>(null)
+
+// tts設定を有効化していなくても、VOICEVOXが起動していれば検出して案内する
+const voicevox = useVoicevoxDetection()
+
+function useVoicevoxNow(): void {
+  ensureTts()
+  if (!store.project?.tts) return
+  store.project.tts.enabled = true
+  store.project.tts.engine = 'voicevox'
+  void fetchVoices()
+}
 
 async function fetchVoices(): Promise<void> {
   if (!store.project?.tts) return
@@ -54,9 +61,23 @@ async function testSpeak(): Promise<void> {
   await service.speak('こんにちは、これはテスト音声です。', {})
 }
 
+async function testNarrationVoice(): Promise<void> {
+  if (!store.project?.tts) return
+  const service: TtsService =
+    store.project.tts.engine === 'voicevox'
+      ? new VoicevoxTts(store.project.tts.voicevoxUrl ?? 'http://localhost:50021')
+      : new WebSpeechTts()
+  await service.speak('これはナレーションのテスト音声です。', {
+    voice: store.project.tts.narrationVoice,
+    rate: store.project.tts.narrationRate,
+    pitch: store.project.tts.narrationPitch,
+  })
+}
+
 onMounted(() => {
   ensureTts()
   void fetchVoices()
+  void voicevox.check(store.project?.tts?.voicevoxUrl)
 })
 
 watch(
@@ -77,6 +98,11 @@ defineExpose({ voices, fetchVoices })
       キャラクターごとの声を割り当てると、セリフごとに自動で読み上げます。
       アップ済みのボイスファイルがあればそちらを優先。VOICEVOX を使う場合は
       アプリを起動しておく必要があります(高品質だが要インストール)。
+    </p>
+
+    <p v-if="voicevox.available.value && !(store.project.tts.enabled && store.project.tts.engine === 'voicevox')" class="tts-voicevox-hint">
+      🎙️ VOICEVOXの起動を検出しました。キャラクターごとに声(話者)を選べます。
+      <button type="button" @click="useVoicevoxNow">VOICEVOXを使う →</button>
     </p>
 
     <label class="tts-row">
@@ -102,6 +128,17 @@ defineExpose({ voices, fetchVoices })
       <span>ナレーション(話者なし)も読み上げる</span>
     </label>
 
+    <div v-if="store.project.tts.narrateNarration" class="tts-narration">
+      <label class="tts-row">
+        <span class="tts-label">ナレーションの声</span>
+        <select v-model="store.project.tts.narrationVoice">
+          <option :value="undefined">(規定の声)</option>
+          <option v-for="voice in voices" :key="voice.id" :value="voice.id">{{ voice.name }}</option>
+        </select>
+      </label>
+      <button type="button" class="tts-narration-test" @click="testNarrationVoice">▶ ナレーションを試聴</button>
+    </div>
+
     <div class="tts-actions">
       <button type="button" @click="fetchVoices">
         {{ loading ? '読み込み中…' : '音声一覧を更新' }}
@@ -115,12 +152,71 @@ defineExpose({ voices, fetchVoices })
 </template>
 
 <style scoped>
+.tts-voicevox-hint {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  background: #fff8dd;
+  border: 2px solid var(--pop-yellow-dark);
+  border-radius: var(--pop-radius-sm);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--pop-ink);
+}
+
+.tts-voicevox-hint button {
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 800;
+  font-family: inherit;
+  color: #fff;
+  background: var(--brand-water, #4fa8d8);
+  border: 2px solid var(--pop-ink);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.tts-voicevox-hint button:hover {
+  filter: brightness(1.08);
+}
+
 .tts-row {
   display: flex;
   align-items: center;
   gap: 10px;
   margin-bottom: 10px;
   font-weight: 700;
+}
+
+.tts-narration {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 10px 26px;
+}
+
+.tts-narration .tts-row {
+  flex: 1;
+  min-width: 220px;
+  margin-bottom: 0;
+}
+
+.tts-narration-test {
+  padding: 6px 14px;
+  font-weight: 700;
+  font-family: inherit;
+  border: 2px solid var(--pop-ink);
+  border-radius: 999px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.tts-narration-test:hover {
+  background: var(--pop-yellow);
 }
 
 .tts-label {

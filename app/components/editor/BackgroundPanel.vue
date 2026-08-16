@@ -8,7 +8,12 @@ const file = ref<File | null>(null)
 
 function onFileChange(event: Event): void {
   const input = event.target as HTMLInputElement
-  file.value = input.files?.[0] ?? null
+  const selected = input.files?.[0] ?? null
+  file.value = selected
+  // 場面名が未入力なら、画像のファイル名(拡張子なし)を仮の場面名にする
+  if (selected && !label.value.trim()) {
+    label.value = selected.name.replace(/\.[^./\\]+$/, '')
+  }
 }
 
 function readFileAsDataUrl(f: File): Promise<string> {

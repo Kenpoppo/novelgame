@@ -16,10 +16,25 @@
   z-index: 1;
 }
 
+.editor-mascot-link {
+  flex-shrink: 0;
+  display: block;
+  border-radius: 50%;
+  transition: transform 0.1s ease;
+}
+
+.editor-mascot-link:hover {
+  transform: translateY(-2px) scale(1.05);
+}
+
+.editor-mascot-link:active {
+  transform: translateY(1px) scale(0.98);
+}
+
 .editor-mascot {
   width: 48px;
   height: auto;
-  flex-shrink: 0;
+  display: block;
   filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.15));
 }
 
@@ -371,6 +386,14 @@
   flex-wrap: wrap;
 }
 
+.character-index {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 800;
+  color: #8a7c6c;
+  min-width: 22px;
+}
+
 .character-notes {
   width: 100%;
   min-height: 44px;
@@ -381,6 +404,37 @@
   border-radius: var(--pop-radius-sm);
   background: #fffdf5;
   resize: vertical;
+}
+
+.character-voicevox-hint {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  background: #fff8dd;
+  border: 2px solid var(--pop-yellow-dark);
+  border-radius: var(--pop-radius-sm);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--pop-ink);
+}
+
+.character-voicevox-hint button {
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 800;
+  font-family: inherit;
+  color: #fff;
+  background: var(--brand-water, #4fa8d8);
+  border: 2px solid var(--pop-ink);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.character-voicevox-hint button:hover {
+  filter: brightness(1.08);
 }
 
 .character-tts {
@@ -611,6 +665,82 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+/* ビートとビートの間に1つ差し込むための挿入スロット。
+   セリフが大量にある台本の途中に1行足したい時、末尾に追加してから
+   並び替え/ドラッグで何十行も動かす手間を無くすためのショートカット。 */
+.beat-insert-slot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 6px;
+}
+
+.beat-insert-slot::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  border-top: 2px dashed #d8cdbd;
+}
+
+.beat-insert-toggle {
+  position: relative;
+  z-index: 1;
+  width: 24px;
+  height: 24px;
+  font-size: 15px;
+  font-weight: 900;
+  font-family: inherit;
+  line-height: 1;
+  color: #fff;
+  background: var(--pop-blue-dark);
+  border: 2px solid var(--pop-ink);
+  border-radius: 50%;
+  cursor: pointer;
+  opacity: 0.45;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.beat-insert-slot:hover .beat-insert-toggle,
+.beat-insert-toggle:focus-visible {
+  opacity: 1;
+  transform: scale(1.15);
+}
+
+.beat-insert-menu {
+  position: absolute;
+  z-index: 6;
+  top: 22px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  padding: 10px;
+  width: max(260px, 70%);
+  background: var(--pop-card);
+  border: 2px solid var(--pop-ink);
+  border-radius: var(--pop-radius-sm);
+  box-shadow: 0 6px 0 var(--pop-shadow);
+}
+
+.beat-insert-menu button {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  color: var(--pop-ink);
+  background: #fbfaf6;
+  border: 2px solid var(--pop-ink);
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.beat-insert-menu button:hover {
+  background: var(--pop-yellow);
 }
 
 .beat {
@@ -1128,6 +1258,318 @@
   text-shadow: 0 2px 0 rgba(255, 255, 255, 0.5);
 }
 
+/* --- 画像一括取り込み(詳細設定画面) --- */
+
+.bulk-image-import {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.bulk-image-import-toggle {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 800;
+  font-family: inherit;
+  color: var(--pop-ink);
+  background: #fff;
+  border: var(--pop-border-w) solid var(--pop-ink);
+  border-radius: 999px;
+  box-shadow: 0 4px 0 var(--pop-shadow);
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.bulk-image-import-toggle:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 var(--pop-shadow);
+}
+
+.bulk-image-import-toggle:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--pop-shadow);
+}
+
+.bulk-image-import-menu {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 8px);
+  left: 0;
+  width: max(280px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: var(--pop-card);
+  border: 2px solid var(--pop-ink);
+  border-radius: var(--pop-radius-sm);
+  box-shadow: 0 6px 0 var(--pop-shadow);
+}
+
+.bulk-image-import-hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #6b5f52;
+}
+
+.bulk-image-import-menu-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.bulk-image-import-menu-buttons button {
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  color: var(--pop-ink);
+  background: #fbfaf6;
+  border: 2px solid var(--pop-ink);
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.bulk-image-import-menu-buttons button:hover {
+  background: var(--pop-yellow);
+}
+
+.bulk-image-result {
+  margin: 10px 0 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--pop-ink);
+}
+
+.bulk-image-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(58, 46, 38, 0.55);
+}
+
+.bulk-image-dialog {
+  width: min(480px, 100%);
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  padding: 28px;
+  background: var(--pop-card);
+  border: var(--pop-border-w) solid var(--pop-ink);
+  border-radius: var(--pop-radius-lg);
+  box-shadow: 0 10px 0 var(--pop-shadow);
+}
+
+.bulk-image-dialog h2 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.bulk-image-dialog-hint {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #6b5f52;
+}
+
+.bulk-image-dialog-list {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bulk-image-dialog-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px;
+  background: #fbfaf6;
+  border: 2px solid var(--pop-ink);
+  border-radius: var(--pop-radius-sm);
+}
+
+.bulk-image-dialog-slot {
+  max-width: 110px;
+}
+
+.bulk-image-dialog-thumb {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 2px solid var(--pop-ink);
+  flex-shrink: 0;
+}
+
+.bulk-image-dialog-filename {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bulk-image-dialog-select {
+  flex-shrink: 0;
+  max-width: 160px;
+}
+
+.bulk-image-dialog-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.bulk-image-dialog-apply,
+.bulk-image-dialog-cancel {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 800;
+  font-family: inherit;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.bulk-image-dialog-apply {
+  color: #fff;
+  background: var(--brand-water);
+  border: var(--pop-border-w) solid var(--brand-navy);
+  box-shadow: 0 5px 0 var(--brand-water-dark);
+}
+
+.bulk-image-dialog-apply:hover {
+  transform: translateY(-2px);
+}
+
+.bulk-image-dialog-cancel {
+  color: var(--pop-ink);
+  background: #fff;
+  border: 2px solid var(--pop-ink);
+}
+
+.bulk-image-dialog-cancel:hover {
+  background: #fbfaf6;
+}
+
+/* --- 台本が無い状態でプレイ/プレビューしようとした時のダイアログ --- */
+
+.no-script-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(58, 46, 38, 0.55);
+}
+
+.no-script-dialog {
+  width: min(420px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  padding: 32px 28px;
+  background: var(--pop-card);
+  border: var(--pop-border-w) solid var(--pop-ink);
+  border-radius: var(--pop-radius-lg);
+  box-shadow: 0 10px 0 var(--pop-shadow);
+}
+
+.no-script-dialog-icon {
+  font-size: 44px;
+}
+
+.no-script-dialog h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.no-script-dialog p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #6b5f52;
+}
+
+.no-script-dialog-actions {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.no-script-dialog-primary,
+.no-script-dialog-secondary {
+  display: block;
+  padding: 12px 20px;
+  font-size: 15px;
+  font-weight: 800;
+  font-family: inherit;
+  text-decoration: none;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.no-script-dialog-primary {
+  color: #fff;
+  background: var(--brand-water);
+  border: var(--pop-border-w) solid var(--brand-navy);
+  box-shadow: 0 5px 0 var(--brand-water-dark);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.no-script-dialog-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 7px 0 var(--brand-water-dark);
+}
+
+.no-script-dialog-primary:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--brand-water-dark);
+}
+
+.no-script-dialog-secondary {
+  color: var(--pop-ink);
+  background: #fff;
+  border: 2px solid var(--pop-ink);
+}
+
+.no-script-dialog-secondary:hover {
+  background: #fbfaf6;
+}
+
+.no-script-dialog-close {
+  margin-top: 4px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  color: #6b5f52;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.no-script-dialog-close:hover {
+  text-decoration: underline;
+}
+
 /* --- 台本読み込み画面 --- */
 
 .import-form {
@@ -1147,6 +1589,56 @@
 .import-preview-meta {
   font-weight: 700;
   margin: 0 0 12px;
+}
+
+.import-preview-mergeinfo {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  background: #fff8dd;
+  border: 2px solid var(--pop-yellow-dark);
+  border-radius: var(--pop-radius-sm);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--pop-ink);
+}
+
+.import-breakdown {
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  background: #fbfaf6;
+  border: 2px dashed var(--pop-ink);
+  border-radius: var(--pop-radius-sm);
+  font-size: 13px;
+}
+
+.import-breakdown summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.import-breakdown ul {
+  margin: 10px 0;
+  padding-left: 20px;
+  line-height: 1.8;
+}
+
+.import-breakdown-note {
+  margin: 8px 0 0;
+  color: #6b5f52;
+  line-height: 1.6;
+}
+
+.import-suggestion {
+  background: #fff8dd;
+  border-color: var(--pop-red);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.import-suggestion p {
+  margin: 0;
+  line-height: 1.6;
 }
 
 /* --- 詳細設定画面(すべてまとめて編集) --- */

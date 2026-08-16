@@ -13,6 +13,7 @@ interface Project {
   audio: AudioCue[]
   backgrounds: BackgroundAsset[]
   beats: Beat[]
+  tts?: TtsConfig
 }
 
 interface BackgroundAsset {
@@ -28,6 +29,9 @@ interface CharacterAsset {
   imageDataUrl?: string    // アップロード画像A(任意、既定の立ち絵)
   imageAltDataUrl?: string // 画像B(任意、状況に応じて切り替える別ポーズ/表情)
   voiceDataUrl?: string    // サンプル/テーマ音声(任意、CharacterPanelから試聴可)
+  ttsVoice?: string        // TTS音声識別子(WebSpeech: voice名 / VOICEVOX: speaker id)
+  ttsRate?: number         // TTS話速(既定 1.0)
+  ttsPitch?: number        // TTSピッチ(既定 1.0)
   notes?: string           // 人物設定・口調・背景などのフリーテキスト(任意)
 }
 
@@ -39,8 +43,25 @@ interface AudioCue {
   sourceNote?: string     // 参照メモ
 }
 
+interface TtsConfig {
+  enabled: boolean                         // TTS読み上げ全体のオンオフ
+  engine: 'webspeech' | 'voicevox'         // 使用エンジン
+  voicevoxUrl?: string                     // VOICEVOX エンジンのURL(既定 http://localhost:50021)
+  narrateNarration?: boolean               // 地の文(話者なし)も読み上げるか
+  narrationVoice?: string                  // 地の文用の音声(未指定なら既定音声)
+  narrationRate?: number
+  narrationPitch?: number
+}
+
 type Beat =
-  | { id: string; type: 'dialogue'; characterId: string | null; text: string; useAltImage?: boolean }
+  | {
+      id: string
+      type: 'dialogue'
+      characterId: string | null
+      text: string
+      useAltImage?: boolean            // true = 画像B / false(既定) = 画像A
+      backgroundId?: string | null      // 指定時にこのセリフの直前で背景を切り替える(null=背景なし/undefined=変更なし)
+    }
   | { id: string; type: 'label'; name: string }
   | { id: string; type: 'jump'; target: string }
   | { id: string; type: 'choice'; options: { text: string; target: string }[] }
@@ -48,6 +69,12 @@ type Beat =
   | { id: string; type: 'se'; audioId: string }
   | { id: string; type: 'background'; backgroundId: string | null } // null = 既定/背景なし
 ```
+
+`Project.tts` は任意フィールド。未設定(旧プロジェクト)の場合は
+`createDefaultTtsConfig()` の値で読み替える(WebSpeechをオフ状態で使う)。
+`TtsPanel.vue` / `CharacterPanel.vue` から編集する。VOICEVOXの起動が
+検出された場合の1クリック有効化については [decisions.md](./decisions.md) の
+「VOICEVOX起動を自動検出」節を参照。
 
 `Project` はキャラクター画像・音源ファイルの data URL を含めて自己完結
 させている(他プロジェクトへの参照を持たない)。`beats` の並び順がそのまま
@@ -76,6 +103,26 @@ type Beat =
 `JSON.parse(JSON.stringify(...))` でVueのreactive Proxyをプレーンオブジェクト
 へ変換している(Proxyのまま`IDBObjectStore.put()`に渡すと`DataCloneError`に
 なるため。詳細は[decisions.md](./decisions.md))。
+
+### アンドゥ/リドゥ(履歴スタック)
+
+`project` の変更ごとに `JSON.stringify(project)` のスナップショットを
+`history[]` に積む。タイピング等の連続変更は 500ms でひとまとめにする
+(1文字ずつ undo になるのを防ぐため)。上限 50 件(`MAX_HISTORY`)を
+超えると古い方から捨てる。`undo()` は現在状態を `future[]` に退避して
+直前状態を復元、`redo()` は逆方向。復元中(`isRestoring`)は新しい履歴を
+積まないことで、undo→redo→undo の往復で履歴が増殖しないようにしている。
+`SubPageHeader.vue` のヘッダーボタン、および Ctrl+Z / Ctrl+Y /
+Ctrl+Shift+Z のショートカットから呼ばれる。
+
+### プロジェクトのエクスポート/インポート(JSONファイル)
+
+`/editor` のヘッダーに「💾 保存」「📂 読込」ボタンを置いており、
+Project 全体を1つのJSONファイル
+(`{ format: 'novelgame-project', version, exportedAt, project }` 形式)として
+ダウンロード/読み込みできる。バックアップ・端末間の受け渡し・作業の
+共有に使う(公開機能とは別導線)。読み込み時に既存プロジェクトがある場合は
+上書き確認のダイアログを出す。手書きの Project 直書きJSONも受け付ける。
 
 ## 再生用データへの変換(`shared/domain/project/compile.ts`)
 

@@ -27,6 +27,8 @@ export function usePlayback(script: ParsedScript, ttsConfig?: TtsConfig) {
   const bgmVolume = ref(0.7)
   const seVolume = ref(0.9)
   const ttsRateMultiplier = ref(1)
+  // ボイス(TTS/ボイスファイル)の再生が終わったら自動で次のセリフへ進める。
+  const autoAdvanceOnVoiceEnd = ref(false)
 
   const audio = new HowlerAudioService()
   audio.setBgmVolume(bgmVolume.value)
@@ -37,6 +39,12 @@ export function usePlayback(script: ParsedScript, ttsConfig?: TtsConfig) {
   // 発話中のボイスファイル(Audio)。次の発話で停止する。
   let voiceAudio: HTMLAudioElement | null = null
 
+  // ボイス再生の「世代」カウンタ。新しいセリフに進む/戻るたびに
+  // stopVoice() でインクリメントし、それより前の世代からの完了通知
+  // (キャンセルされたTTSのonerror等)を無視することで、既に次のセリフへ
+  // 進んだ後に古い完了通知が届いて二重に advance() されるのを防ぐ。
+  let voiceGeneration = 0
+
   const tts: TtsService | null = ttsConfig?.enabled
     ? ttsConfig.engine === 'voicevox'
       ? new VoicevoxTts(ttsConfig.voicevoxUrl ?? 'http://localhost:50021')
@@ -44,12 +52,20 @@ export function usePlayback(script: ParsedScript, ttsConfig?: TtsConfig) {
     : null
 
   function stopVoice(): void {
+    voiceGeneration++
     if (voiceAudio) {
       voiceAudio.pause()
       voiceAudio.currentTime = 0
       voiceAudio = null
     }
     tts?.stop()
+  }
+
+  function handleVoiceFinished(generation: number): void {
+    if (generation !== voiceGeneration) return
+    if (autoAdvanceOnVoiceEnd.value && !ended.value && !choices.value) {
+      advance()
+    }
   }
 
   const vm = new ScriptVM(script, {
@@ -61,9 +77,12 @@ export function usePlayback(script: ParsedScript, ttsConfig?: TtsConfig) {
 
       // 発話再生: 既存ボイスファイル > TTS > 何もしない
       stopVoice()
+      const myGeneration = voiceGeneration
       if (payload.voiceDataUrl) {
         const a = new Audio(payload.voiceDataUrl)
         voiceAudio = a
+        a.addEventListener('ended', () => handleVoiceFinished(myGeneration))
+        a.addEventListener('error', () => handleVoiceFinished(myGeneration))
         void a.play().catch(() => {
           // 自動再生ブロック等は無視
         })
@@ -71,11 +90,13 @@ export function usePlayback(script: ParsedScript, ttsConfig?: TtsConfig) {
         const shouldSpeak = payload.characterId !== null || ttsConfig?.narrateNarration !== false
         if (shouldSpeak && payload.text.trim().length > 0) {
           const baseRate = payload.ttsRate ?? (payload.characterId === null ? ttsConfig?.narrationRate : undefined) ?? 1
-          void tts.speak(payload.text, {
-            voice: payload.ttsVoice ?? (payload.characterId === null ? ttsConfig?.narrationVoice : undefined),
-            rate: baseRate * ttsRateMultiplier.value,
-            pitch: payload.ttsPitch ?? (payload.characterId === null ? ttsConfig?.narrationPitch : undefined),
-          })
+          void tts
+            .speak(payload.text, {
+              voice: payload.ttsVoice ?? (payload.characterId === null ? ttsConfig?.narrationVoice : undefined),
+              rate: baseRate * ttsRateMultiplier.value,
+              pitch: payload.ttsPitch ?? (payload.characterId === null ? ttsConfig?.narrationPitch : undefined),
+            })
+            .then(() => handleVoiceFinished(myGeneration))
         }
       }
 
@@ -168,6 +189,7 @@ export function usePlayback(script: ParsedScript, ttsConfig?: TtsConfig) {
     bgmVolume,
     seVolume,
     ttsRateMultiplier,
+    autoAdvanceOnVoiceEnd,
     start,
     advance,
     back,

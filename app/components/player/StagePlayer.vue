@@ -66,6 +66,7 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
       title="メニュー(Esc)"
       @click="togglePause"
     >☰</button>
+    <CastListPanel :characters="Object.values(script.characters)" />
     <button
       type="button"
       class="stage-nav-button stage-nav-button--prev"
@@ -136,6 +137,11 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
             <span class="stage-pause-slider-value">{{ playback.ttsRateMultiplier.value.toFixed(1) }}x</span>
           </label>
         </div>
+
+        <label class="stage-pause-toggle">
+          <input v-model="playback.autoAdvanceOnVoiceEnd.value" type="checkbox">
+          <span>🔊 読み上げが終わったら自動で次へ進む</span>
+        </label>
 
         <button type="button" class="publish-button" @click="togglePause">続ける (Esc)</button>
         <button type="button" class="io-button" @click="goHome">
