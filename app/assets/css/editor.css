@@ -84,6 +84,22 @@
   box-shadow: 0 1px 0 var(--pop-purple-dark);
 }
 
+.io-button {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 800;
+  font-family: inherit;
+  color: var(--pop-ink);
+  background: var(--pop-cream);
+  border: 2px solid var(--pop-ink);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.io-button:hover {
+  background: var(--pop-yellow);
+}
+
 .error-banner {
   margin: 16px 24px 0;
   padding: 12px 18px;
