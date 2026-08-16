@@ -65,14 +65,15 @@ function resolveCanonicalName(name: string, knownNames: ReadonlySet<string>): st
 }
 
 export function analyzeScriptHeuristically(text: string): ScriptAnalysis {
-  // 区切り記号のみの行(___ / ⸻ / — / ― など)はビート化せず読み飛ばす。
+  // 区切り記号のみの行(___ / ⸻ / — / ― / ─ / ━ など)はビート化せず読み飛ばす。
   // 台本上のシーン区切りとして書かれていることが多く、そのままビートにすると
   // 「地の文としての区切り線」がゲーム画面に表示されてしまうため。
-  const SEPARATOR_ONLY_LINE = /^[_＿⸻—―–\-−ｰ]{2,}$/
+  // 単独の `⸻` や `—` も除外対象(1文字以上でOK)。
+  const SEPARATOR_ONLY_LINE = /^[_＿⸻—―–\-−ｰー─━═\s]+$/
   const lines = text
     .split(/\r?\n/)
     .map((line) => line.trim())
-    .map((line) => (SEPARATOR_ONLY_LINE.test(line) ? '' : line))
+    .map((line) => (line.length > 0 && SEPARATOR_ONLY_LINE.test(line) ? '' : line))
   const beats: RawBeat[] = []
 
   /** 与えられた位置以降で最初の非空行の位置を返す。無ければ -1。 */
