@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { parseProfileText } from '#shared/domain/project/profileImport'
+import { parseProfileTextWithDiagnostics } from '#shared/domain/project/profileImport'
 import type { CharacterAsset } from '#shared/domain/project/types'
 
 const PALETTE = ['#4fc3f7', '#f48fb1', '#aed581', '#ffb74d', '#ba68c8', '#4db6ac', '#7986cb', '#ff8a65']
@@ -38,7 +38,13 @@ function analyze(): void {
   errorMessage.value = null
   preview.value = null
 
-  const entries = parseProfileText(text.value)
+  const { entries, skipped } = parseProfileTextWithDiagnostics(text.value)
+  console.info(`[プロフィール解析] 検出 ${entries.length}件 / スキップ ${skipped.length}件`)
+  if (skipped.length > 0) {
+    console.table(skipped)
+  }
+  console.table(entries.map((e) => ({ name: e.name, color: e.color ?? '(自動)', hasNotes: !!e.notes })))
+
   if (entries.length === 0) {
     errorMessage.value = '読み込めるプロフィールが見つかりませんでした。「名前:」や空行区切りブロックの形式を確認してください。'
     return

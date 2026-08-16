@@ -16,6 +16,16 @@ export interface ProfileEntry {
   notes?: string
 }
 
+/**
+ * デバッグ用: どのブロックが何の理由でスキップされたかを追跡する。
+ * ブラウザ実行結果とNode実行結果が食い違ったときに、実際にパーサーが
+ * どのように動いたかをコンソールで確認するために使う。
+ */
+export interface ProfileParseDiagnostics {
+  entries: ProfileEntry[]
+  skipped: { block: string; name: string; reason: string }[]
+}
+
 const KEY_NAME = /^(?:名前|Name)\s*[:：]\s*(.+)$/i
 const KEY_COLOR = /^(?:色|Color)\s*[:：]\s*(#?[0-9a-f]{3,8})\s*$/i
 const KEY_NOTES = /^(?:プロフィール|人物設定|説明|Profile|Description|Note|Notes)\s*[:：]\s*(.*)$/i
@@ -58,14 +68,18 @@ function normalizeColor(raw: string | undefined): string | undefined {
  * 自然文形式として解釈する。
  */
 export function parseProfileText(input: string): ProfileEntry[] {
+  return parseProfileTextWithDiagnostics(input).entries
+}
+
+export function parseProfileTextWithDiagnostics(input: string): ProfileParseDiagnostics {
   const trimmed = input.trim()
-  if (!trimmed) return []
+  if (!trimmed) return { entries: [], skipped: [] }
 
   if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
     try {
       const parsed: unknown = JSON.parse(trimmed)
       const list: unknown[] = Array.isArray(parsed) ? parsed : [parsed]
-      return list
+      const entries = list
         .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
         .map((item) => {
           const name = String(item.name ?? item['名前'] ?? '').trim()
@@ -76,6 +90,7 @@ export function parseProfileText(input: string): ProfileEntry[] {
           return { name, color, notes }
         })
         .filter((entry) => entry.name.length > 0)
+      return { entries, skipped: [] }
     } catch {
       // JSON として解釈できない場合は、下のテキスト解釈にフォールバック
     }
@@ -83,6 +98,7 @@ export function parseProfileText(input: string): ProfileEntry[] {
 
   const blocks = trimmed.split(/\r?\n\s*\r?\n/)
   const entries: ProfileEntry[] = []
+  const skipped: { block: string; name: string; reason: string }[] = []
 
   for (const block of blocks) {
     const lines = block.split(/\r?\n/).map((line) => line.trim()).filter((line) => line.length > 0)
@@ -129,15 +145,19 @@ export function parseProfileText(input: string): ProfileEntry[] {
       notesLines.push(line)
     }
 
-    if (!name) continue
-    // 「名前:」等の明示的キーがなく、かつ説明行も無い単独名前ブロックは
-    // 章タイトルや組織名(例: 「県警本部」)である可能性が高いため、
-    // キャラクターとしては登録しない。明示的キーがある場合はユーザーが
-    // 意図的に名前だけを登録したとみなして残す。
-    if (!hasExplicitNameKey && notesLines.length === 0) continue
-    // 「職員」「ラジオパーソナリティ」など、個人を指さない汎用語は
-    // 明示的キーが無い場合に限り除外する(誤検出防止)。
-    if (!hasExplicitNameKey && NON_CHARACTER_TERMS.has(name)) continue
+    const blockSummary = block.split(/\r?\n/)[0]!.slice(0, 30)
+    if (!name) {
+      skipped.push({ block: blockSummary, name: '', reason: 'no-name-detected' })
+      continue
+    }
+    if (!hasExplicitNameKey && notesLines.length === 0) {
+      skipped.push({ block: blockSummary, name, reason: 'single-line-no-description' })
+      continue
+    }
+    if (!hasExplicitNameKey && NON_CHARACTER_TERMS.has(name)) {
+      skipped.push({ block: blockSummary, name, reason: 'non-character-term' })
+      continue
+    }
 
     entries.push({
       name,
@@ -146,5 +166,5 @@ export function parseProfileText(input: string): ProfileEntry[] {
     })
   }
 
-  return entries
+  return { entries, skipped }
 }
