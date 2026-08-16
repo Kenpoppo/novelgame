@@ -8,7 +8,13 @@ onMounted(() => {
 
 <template>
   <div v-if="store.project" class="editor">
-    <SubPageHeader title="詳細設定(すべての設定)" />
+    <SubPageHeader title="詳細設定(すべての設定)">
+      <template #actions>
+        <NuxtLink to="/editor/branches" class="publish-button all-settings-next-button all-settings-next-button--compact">
+          次の段階へ →
+        </NuxtLink>
+      </template>
+    </SubPageHeader>
 
     <div class="subpage-body subpage-body--wide">
       <label class="all-settings-title-label" for="all-settings-title">タイトル</label>
@@ -55,5 +61,10 @@ onMounted(() => {
 .all-settings-next-button {
   text-decoration: none;
   display: inline-block;
+}
+
+.all-settings-next-button--compact {
+  padding: 8px 18px;
+  font-size: 13px;
 }
 </style>
