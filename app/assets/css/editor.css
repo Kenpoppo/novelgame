@@ -649,6 +649,32 @@
   background: var(--pop-yellow);
 }
 
+.label-preview {
+  font-size: 11px;
+  font-weight: 600;
+  color: #8a7c6c;
+  padding-left: 4px;
+}
+
+.label-preview--inline {
+  display: inline-block;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.character-filter {
+  width: 100%;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  font-family: inherit;
+  font-size: 13px;
+  border: 2px solid var(--pop-ink);
+  border-radius: var(--pop-radius-sm);
+  background: #fff;
+}
+
 .beat-controls button {
   width: 30px;
   font-size: 11px;

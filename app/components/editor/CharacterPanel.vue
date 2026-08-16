@@ -13,9 +13,17 @@ const imageFile = ref<File | null>(null)
 const voiceFile = ref<File | null>(null)
 const saveToLibrary = ref(false)
 const selectedLibraryId = ref('')
+const filterQuery = ref('')
 
 // キャラごとの再生中Audioを保持し、多重再生や前の再生の停止を管理する
 const activeVoiceAudio = ref<HTMLAudioElement | null>(null)
+
+const filteredCharacters = computed(() => {
+  const chars = store.project?.characters ?? []
+  const q = filterQuery.value.trim().toLowerCase()
+  if (!q) return chars
+  return chars.filter((c) => c.name.toLowerCase().includes(q) || (c.notes ?? '').toLowerCase().includes(q))
+})
 
 // TTS 音声の一覧(プロジェクト tts 設定から取得)
 const ttsVoices = ref<TtsVoice[]>([])
@@ -184,10 +192,18 @@ onUnmounted(() => {
 
 <template>
   <section class="panel">
-    <h2>キャラクター</h2>
+    <h2>キャラクター <span class="beat-count">({{ store.project?.characters.length ?? 0 }}人)</span></h2>
+
+    <input
+      v-if="(store.project?.characters.length ?? 0) > 5"
+      v-model="filterQuery"
+      type="text"
+      class="character-filter"
+      placeholder="名前・人物設定で絞り込み…"
+    >
 
     <ul class="character-list">
-      <li v-for="character in store.project?.characters ?? []" :key="character.id" class="character-item">
+      <li v-for="character in filteredCharacters" :key="character.id" class="character-item">
         <div class="character-item-main">
           <img v-if="character.imageDataUrl" class="character-thumb" :src="character.imageDataUrl" alt="A">
           <img v-if="character.imageAltDataUrl" class="character-thumb character-thumb--alt" :src="character.imageAltDataUrl" alt="B">

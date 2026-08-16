@@ -28,6 +28,25 @@ function characterHasAlt(characterId: string): boolean {
   return !!character?.imageAltDataUrl
 }
 
+/**
+ * 指定ラベルの直後の最初の台詞ビートを短く要約する。
+ * ジャンプ先や選択肢先が「どんな場面か」を編集画面で確認しやすくするため。
+ */
+function labelPreview(labelName: string): string {
+  if (!store.project || !labelName) return ''
+  const beats = store.project.beats
+  const labelIndex = beats.findIndex((b) => b.type === 'label' && b.name === labelName)
+  if (labelIndex < 0) return ''
+  for (let i = labelIndex + 1; i < beats.length && i < labelIndex + 6; i++) {
+    const b = beats[i]!
+    if (b.type === 'dialogue' && b.text.trim().length > 0) {
+      const preview = b.text.slice(0, 24)
+      return `→ ${preview}${b.text.length > 24 ? '…' : ''}`
+    }
+  }
+  return '→ (セリフなし)'
+}
+
 function onDialogueBgChange(beat: Extract<Beat, { type: 'dialogue' }>, event: Event): void {
   const value = (event.target as HTMLSelectElement).value
   if (value === '_keep_') {
@@ -179,6 +198,7 @@ function addBeat(type: Beat['type']): void {
               <option v-if="labelNames.length === 0" value="">(ラベルがありません)</option>
               <option v-for="name in labelNames" :key="name" :value="name">{{ name }}</option>
             </select>
+            <span v-if="beat.target" class="label-preview">{{ labelPreview(beat.target) }}</span>
           </template>
 
           <template v-else-if="beat.type === 'choice'">
@@ -189,6 +209,7 @@ function addBeat(type: Beat['type']): void {
                   <option v-if="labelNames.length === 0" value="">(ラベルがありません)</option>
                   <option v-for="name in labelNames" :key="name" :value="name">{{ name }}</option>
                 </select>
+                <span v-if="option.target" class="label-preview label-preview--inline">{{ labelPreview(option.target) }}</span>
                 <button type="button" @click="removeOption(beat, optionIndex)">×</button>
               </div>
             </div>

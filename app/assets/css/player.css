@@ -52,31 +52,33 @@
   top: 50%;
   transform: translateY(-50%);
   z-index: 3;
-  width: 56px;
-  height: 96px;
-  font-size: 44px;
+  width: 48px;
+  height: 80px;
+  font-size: 36px;
   font-weight: 900;
   font-family: inherit;
   line-height: 1;
   color: var(--pop-ink);
-  background: rgba(255, 255, 255, 0.75);
-  border: var(--pop-border-w) solid var(--pop-ink);
+  background: rgba(255, 255, 255, 0.5);
+  border: 2px solid var(--pop-ink);
   border-radius: 999px;
-  box-shadow: 0 4px 0 var(--pop-shadow);
+  box-shadow: 0 3px 0 var(--pop-shadow);
   cursor: pointer;
-  transition: background 0.15s ease, transform 0.1s ease;
+  opacity: 0.35;
+  transition: opacity 0.2s ease, background 0.15s ease, transform 0.1s ease;
 }
 
 .stage-nav-button:hover {
-  background: #fff;
+  background: rgba(255, 255, 255, 0.95);
+  opacity: 1;
 }
 
 .stage-nav-button:active {
   transform: translateY(-50%) scale(0.96);
 }
 
-.stage-nav-button--prev { left: 12px; }
-.stage-nav-button--next { right: 12px; }
+.stage-nav-button--prev { left: 10px; }
+.stage-nav-button--next { right: 10px; }
 
 /* 左右2スロットの対面レイアウト。しゃべっている側は活性化、
    もう一方は薄く暗く落とす。上から8割(胴まで)を表示するため、
