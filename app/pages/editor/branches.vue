@@ -33,7 +33,11 @@ function goPlay(): void {
 
 <template>
   <div v-if="store.project" class="editor">
-    <SubPageHeader title="ストーリー展開(選択肢・分岐)" />
+    <SubPageHeader title="ストーリー展開(選択肢・分岐)">
+      <template #actions>
+        <button type="button" class="play-button play-button--compact" @click="goPlay">プレビュー →</button>
+      </template>
+    </SubPageHeader>
 
     <div class="subpage-body subpage-body--wide">
       <section class="panel branches-intro">
@@ -102,5 +106,10 @@ function goPlay(): void {
 
 .branches-back:hover {
   text-decoration: underline;
+}
+
+.play-button--compact {
+  padding: 8px 18px;
+  font-size: 13px;
 }
 </style>
