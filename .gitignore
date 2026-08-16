@@ -39,3 +39,6 @@ sample/
 
 # Local project settings
 .claude/
+
+# Local test scripts
+.test-*
