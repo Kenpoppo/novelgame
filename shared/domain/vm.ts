@@ -21,6 +21,8 @@ export class ScriptVM {
   private readonly script: ParsedScript
   private readonly callbacks: VMCallbacks
   private pointer = 0
+  // 過去に停止した dialogue/choice の pointer 位置。「1つ前へ戻る」で使う。
+  private history: number[] = []
 
   constructor(script: ParsedScript, callbacks: VMCallbacks) {
     this.script = script
@@ -34,8 +36,23 @@ export class ScriptVM {
   advance(): void {
     const current = this.script.instructions[this.pointer]
     if (current?.type === 'choice') return
+    if (current?.type === 'dialogue') {
+      this.history.push(this.pointer)
+    }
     this.pointer++
     this.run()
+  }
+
+  back(): boolean {
+    const prev = this.history.pop()
+    if (prev === undefined) return false
+    this.pointer = prev
+    this.run()
+    return true
+  }
+
+  canGoBack(): boolean {
+    return this.history.length > 0
   }
 
   choose(target: string): void {

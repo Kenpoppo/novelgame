@@ -16,6 +16,68 @@
   background-size: cover;
 }
 
+/* 左上のホームボタン、左右のシーン送り/戻しボタン。
+   立ち絵より前面(z-index:3)にして常に操作可能に。 */
+.stage-home-button {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  font-size: 26px;
+  text-decoration: none;
+  background: var(--pop-card);
+  border: var(--pop-border-w) solid var(--pop-ink);
+  border-radius: 50%;
+  box-shadow: 0 4px 0 var(--pop-shadow);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.stage-home-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 var(--pop-shadow);
+}
+
+.stage-home-button:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--pop-shadow);
+}
+
+.stage-nav-button {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+  width: 56px;
+  height: 96px;
+  font-size: 44px;
+  font-weight: 900;
+  font-family: inherit;
+  line-height: 1;
+  color: var(--pop-ink);
+  background: rgba(255, 255, 255, 0.75);
+  border: var(--pop-border-w) solid var(--pop-ink);
+  border-radius: 999px;
+  box-shadow: 0 4px 0 var(--pop-shadow);
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.stage-nav-button:hover {
+  background: #fff;
+}
+
+.stage-nav-button:active {
+  transform: translateY(-50%) scale(0.96);
+}
+
+.stage-nav-button--prev { left: 12px; }
+.stage-nav-button--next { right: 12px; }
+
 /* 左右2スロットの対面レイアウト。しゃべっている側は活性化、
    もう一方は薄く暗く落とす。上から8割(胴まで)を表示するため、
    縦方向はスロット内で下寄せ + 下から20%を overflow-hidden で隠す。 */

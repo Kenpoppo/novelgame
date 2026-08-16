@@ -139,7 +139,7 @@ function apply(): void {
           タイトル: <strong>{{ preview.title }}</strong>
         </p>
         <p class="import-preview-meta">
-          キャラクター {{ preview.characters.length }}人 / セリフ・地の文 {{ preview.beats.length }}件を検出しました。
+          キャラクター {{ preview.characters.length }}人 / セリフ・ナレーション {{ preview.beats.length }}件を検出しました。
         </p>
         <ul class="character-list">
           <li v-for="character in preview.characters" :key="character.id" class="character-item">

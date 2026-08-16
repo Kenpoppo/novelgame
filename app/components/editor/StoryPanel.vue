@@ -83,12 +83,12 @@ function addBeat(type: Beat['type']): void {
         <div class="beat-body">
           <template v-if="beat.type === 'dialogue'">
             <select v-model="beat.characterId">
-              <option :value="null">(地の文)</option>
+              <option :value="null">(ナレーション)</option>
               <option v-for="character in store.project?.characters ?? []" :key="character.id" :value="character.id">
                 {{ character.name }}
               </option>
             </select>
-            <textarea v-model="beat.text" rows="2" placeholder="セリフ・地の文" />
+            <textarea v-model="beat.text" rows="2" placeholder="セリフ・ナレーション" />
             <label
               v-if="beat.characterId && characterHasAlt(beat.characterId)"
               class="beat-image-toggle"

@@ -88,6 +88,13 @@ export function usePlayback(script: ParsedScript) {
     vm.advance()
   }
 
+  function back(): void {
+    // VMの履歴から前のdialogueに戻る。左右スロットや背景の状態は最新の
+    // dialogueで自動的に再構築される(過去のdialogueがonDialogueを再送する)ため、
+    // 明示的に復元する必要はない。
+    vm.back()
+  }
+
   function choose(target: string): void {
     vm.choose(target)
   }
@@ -106,6 +113,7 @@ export function usePlayback(script: ParsedScript) {
     backgroundImage,
     start,
     advance,
+    back,
     choose,
   }
 }

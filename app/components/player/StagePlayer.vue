@@ -16,8 +16,12 @@ function handleStart(): void {
 
 function handleKeydown(event: KeyboardEvent): void {
   if (!started.value) return
-  if (event.code === 'Space' || event.code === 'Enter') {
+  if (event.code === 'Space' || event.code === 'Enter' || event.code === 'ArrowRight') {
     playback.advance()
+    return
+  }
+  if (event.code === 'ArrowLeft' || event.code === 'Backspace') {
+    playback.back()
   }
 }
 
@@ -33,6 +37,24 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
     :style="playback.backgroundImage.value ? { backgroundImage: `url(${playback.backgroundImage.value})` } : {}"
     :class="{ 'stage--has-bg': !!playback.backgroundImage.value }"
   >
+    <NuxtLink to="/" class="stage-home-button" aria-label="ホームへ戻る" title="ホームへ戻る">
+      🏠
+    </NuxtLink>
+    <button
+      type="button"
+      class="stage-nav-button stage-nav-button--prev"
+      aria-label="1つ前のセリフへ"
+      title="1つ前のセリフへ"
+      @click="playback.back"
+    >‹</button>
+    <button
+      type="button"
+      class="stage-nav-button stage-nav-button--next"
+      aria-label="次のセリフへ"
+      title="次のセリフへ"
+      @click="playback.advance"
+    >›</button>
+
     <div class="stage-cast">
       <div
         class="stage-slot stage-slot--left"
