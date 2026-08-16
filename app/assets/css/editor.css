@@ -580,6 +580,27 @@
   color: var(--pop-ink);
 }
 
+.beat-scene-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.beat-bg-selector {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--pop-ink);
+}
+
+.beat-bg-selector select {
+  min-width: 140px;
+}
+
 .beat-body select,
 .beat-body input[type='text'] {
   width: 100%;

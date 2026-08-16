@@ -12,6 +12,16 @@ function characterHasAlt(characterId: string): boolean {
   return !!character?.imageAltDataUrl
 }
 
+function onDialogueBgChange(beat: Extract<Beat, { type: 'dialogue' }>, event: Event): void {
+  const value = (event.target as HTMLSelectElement).value
+  if (value === '_keep_') {
+    // 前のシーンの背景を継承する場合はプロパティ自体を削除する
+    delete (beat as { backgroundId?: string | null }).backgroundId
+    return
+  }
+  beat.backgroundId = value === '_none_' ? null : value
+}
+
 function moveBeat(index: number, delta: number): void {
   if (!store.project) return
   const beats = store.project.beats
@@ -89,13 +99,27 @@ function addBeat(type: Beat['type']): void {
               </option>
             </select>
             <textarea v-model="beat.text" rows="2" placeholder="セリフ・ナレーション" />
-            <label
-              v-if="beat.characterId && characterHasAlt(beat.characterId)"
-              class="beat-image-toggle"
-            >
-              <input v-model="beat.useAltImage" type="checkbox">
-              画像B(別ポーズ/表情)を使う
-            </label>
+            <div class="beat-scene-options">
+              <label
+                v-if="beat.characterId && characterHasAlt(beat.characterId)"
+                class="beat-image-toggle"
+              >
+                <input v-model="beat.useAltImage" type="checkbox">
+                画像B(別ポーズ/表情)を使う
+              </label>
+              <label class="beat-bg-selector">
+                <span>背景</span>
+                <select :value="beat.backgroundId ?? '_keep_'" @change="onDialogueBgChange(beat, $event)">
+                  <option value="_keep_">(前のまま)</option>
+                  <option value="_none_">(背景なし)</option>
+                  <option
+                    v-for="bg in store.project?.backgrounds ?? []"
+                    :key="bg.id"
+                    :value="bg.id"
+                  >{{ bg.label }}</option>
+                </select>
+              </label>
+            </div>
           </template>
 
           <template v-else-if="beat.type === 'label'">

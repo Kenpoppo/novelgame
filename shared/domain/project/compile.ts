@@ -24,6 +24,20 @@ export function compileProject(project: Project): CompileResult {
         if (beat.characterId !== null && !characters[beat.characterId]) {
           errors.push(`台詞「${beat.text}」のキャラクターが見つかりません`)
         }
+        // 台詞ビート自身に背景指定があれば、実行前に background 命令へ展開する
+        // (「+ 背景」ビートを毎回挟まなくても、シーン単位で背景を切り替えられる)
+        if (beat.backgroundId !== undefined) {
+          if (beat.backgroundId === null) {
+            items.push({ type: 'background', src: null })
+          } else {
+            const bg = backgroundById.get(beat.backgroundId)
+            if (!bg) {
+              errors.push('台詞ビートで指定された背景がライブラリに見つかりません')
+            } else if (bg.imageDataUrl) {
+              items.push({ type: 'background', src: bg.imageDataUrl })
+            }
+          }
+        }
         items.push({
           type: 'dialogue',
           speaker: beat.characterId,

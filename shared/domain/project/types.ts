@@ -30,7 +30,20 @@ export interface BackgroundAsset {
  * resolveLabels() で取り除かれ、labels マップへ解決される。
  */
 export type Beat =
-  | { id: string; type: 'dialogue'; characterId: string | null; text: string; useAltImage?: boolean }
+  | {
+      id: string
+      type: 'dialogue'
+      characterId: string | null
+      text: string
+      useAltImage?: boolean
+      /**
+       * このセリフを再生する直前に切り替えたい背景。
+       * - undefined: 変更しない(前のシーンの背景を継承)
+       * - null: 背景なし(既定のグラデーションに戻す)
+       * - string: 背景ライブラリのID
+       */
+      backgroundId?: string | null
+    }
   | { id: string; type: 'label'; name: string }
   | { id: string; type: 'jump'; target: string }
   | { id: string; type: 'choice'; options: { text: string; target: string }[] }
