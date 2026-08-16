@@ -29,5 +29,5 @@ export const useProjectStore = defineStore('project', () => {
 
   watch(project, () => void persist(), { deep: true })
 
-  return { project, libraryCharacters, loaded, load, refreshLibrary }
+  return { project, libraryCharacters, loaded, load, refreshLibrary, saveNow: persist }
 })

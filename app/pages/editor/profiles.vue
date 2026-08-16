@@ -60,12 +60,14 @@ function analyze(): void {
   })
 }
 
-function apply(): void {
+async function apply(): Promise<void> {
   if (!preview.value || !store.project) return
 
   const characters = store.project.characters
   const indexByName = new Map(characters.map((character, index) => [character.name, index] as const))
 
+  let added = 0
+  let updated = 0
   for (const entry of preview.value) {
     if (!entry.included) continue
     const existingIndex = indexByName.get(entry.name)
@@ -76,6 +78,7 @@ function apply(): void {
         color: entry.color,
         notes: entry.notes ?? current.notes,
       }
+      updated++
       continue
     }
     const created: CharacterAsset = {
@@ -85,7 +88,14 @@ function apply(): void {
       notes: entry.notes,
     }
     characters.push(created)
+    // 追加のたびに index を最新化することで、後続の同名エントリを重複追加しない
+    indexByName.set(created.name, characters.length - 1)
+    added++
   }
+
+  // 反映結果を可視化するため、遷移前に永続化を待ってから最終件数をコンソール出力する。
+  await store.saveNow()
+  console.info(`[プロフィール反映] 追加 ${added} / 更新 ${updated} / 合計キャラクター ${characters.length}`)
 
   router.push('/editor/characters')
 }
