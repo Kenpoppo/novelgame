@@ -181,7 +181,7 @@ async function onImportFile(event: Event): Promise<void> {
       </NuxtLink>
     </nav>
     <footer class="editor-footer">
-      🐰 ヘッドホンウサギ / © {{ new Date().getFullYear() }} 浦和うさぎスタジオ
+      © {{ new Date().getFullYear() }} 浦和うさぎスタジオ
     </footer>
   </div>
 </template>

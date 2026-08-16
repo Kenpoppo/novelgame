@@ -284,8 +284,7 @@ function backTo(target: Step): void {
       <button type="button" class="wizard-hero-cta" @click="begin">はじめる →</button>
       <NuxtLink to="/editor" class="wizard-skip">既存の編集を続ける →</NuxtLink>
       <p class="wizard-hero-credit">
-        © {{ new Date().getFullYear() }} 浦和うさぎスタジオ<br>
-        🐰 ヘッドホンウサギ
+        © {{ new Date().getFullYear() }} 浦和うさぎスタジオ
       </p>
     </section>
 

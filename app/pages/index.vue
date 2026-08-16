@@ -28,7 +28,6 @@ const year = new Date().getFullYear()
       </NuxtLink>
     </div>
     <footer class="gallery-footer">
-      🐰 ヘッドホンウサギ<br>
       © {{ year }} 浦和うさぎスタジオ / URAWA USAGI Studio Inc.
     </footer>
   </div>
