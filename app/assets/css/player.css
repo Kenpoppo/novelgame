@@ -9,6 +9,35 @@
   overflow: hidden;
 }
 
+/* 立ち絵表示: 画面中央上寄り(下端をダイアログ上、上端はビューポート上部から
+   少しの余白)に配置し、画像の縦横比を保ったまま最大サイズで表示する。 */
+.stage-portrait {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 4vh;
+  bottom: 200px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.stage-portrait-image {
+  max-width: min(60vw, 480px);
+  max-height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.25));
+  /* 発言が切り替わるたびに `:key` で再マウントされ、フェードで登場する */
+  animation: portrait-fade-in 0.25s ease-out;
+}
+
+@keyframes portrait-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .dialogue-box {
   position: relative;
   z-index: 1;

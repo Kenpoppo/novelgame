@@ -28,11 +28,19 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
 <template>
   <TitleScreen v-if="!started" :title="title" @start="handleStart" />
   <div v-else class="stage">
+    <div class="stage-portrait">
+      <img
+        v-if="playback.speakerImage.value"
+        :key="playback.speakerImage.value"
+        class="stage-portrait-image"
+        :src="playback.speakerImage.value"
+        alt=""
+      >
+    </div>
     <ChoiceOverlay v-if="playback.choices.value" :options="playback.choices.value" @choose="playback.choose" />
     <DialogueBox
       :speaker-name="playback.speakerName.value"
       :speaker-color="playback.speakerColor.value"
-      :speaker-image="playback.speakerImage.value"
       :text="playback.text.value"
       @advance="playback.advance"
     />
