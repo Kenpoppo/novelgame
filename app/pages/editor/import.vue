@@ -87,11 +87,15 @@ async function analyze(): Promise<void> {
 
 function apply(): void {
   if (!preview.value || !store.project) return
+  const hasExistingContent = store.project.beats.length > 0 || store.project.characters.length > 0
+  if (hasExistingContent && !window.confirm('現在のタイトル・キャラクター・ストーリーを、読み込んだ内容で置き換えます。よろしいですか?')) {
+    return
+  }
   if (preview.value.title) {
     store.project.title = preview.value.title
   }
-  store.project.characters.push(...preview.value.characters)
-  store.project.beats.push(...preview.value.beats)
+  store.project.characters = [...preview.value.characters]
+  store.project.beats = [...preview.value.beats]
   router.push('/editor/all')
 }
 </script>
@@ -109,6 +113,8 @@ function apply(): void {
           セリフを自動で読み取ります。可能ならAIで解析し、使えない場合は
           簡易的なルールベース解析にフォールバックします。選択肢・分岐は
           自動設定されないため、反映後にストーリー編集で追加してください。
+          反映時は現在のタイトル・キャラクター・ストーリーを読み込んだ内容で
+          置き換えます(音源はそのまま残ります)。
         </p>
         <form class="import-form" @submit.prevent="analyze">
           <input type="file" accept=".txt" @change="onFileChange">
