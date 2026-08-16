@@ -18,6 +18,8 @@ import type { ScriptAnalysis } from './scriptImport'
  *     ため、単独では1回しか登場しない表記でも合算で生き残りやすくなる)。
  *   - 頻度フィルタ: 名寄せ後も2回以上出現しない名前は誤検出(見出しや
  *     章タイトルの誤検出であることが多い)とみなし地の文へ格下げする。
+ *   - 集団ラベル除外: 「全員」「みんな」「一同」等は個人を指さない指示語
+ *     なのでキャラクターとして扱わず、その行はナレーションへ格下げする。
  */
 
 const NAME_ONLY_LINE = /^([^\s:：「」『』。、！？…〜]{1,12})(?:[(（][^)）]*[)）])?$/
@@ -32,6 +34,17 @@ const NAME_SUFFIXES = [
   '探偵', '監督', '議員', '大臣', '選手', '記者',
   'さん', 'くん', '君', 'ちゃん', '様', '氏',
 ].sort((a, b) => b.length - a.length)
+
+// 個人を指さない集団・役割ラベル。これらの語が「名前だけの行」パターン等で
+// 発話者として検出されてもキャラクター一覧には登録せず、当該行はナレーション
+// (speaker: null)として扱う(「全員」「みんな」等はキャラクターではなく
+// 「その場の登場人物全員のセリフ」を示す指示語のため)。
+const NON_PERSON_LABELS = new Set<string>([
+  '全員', 'みんな', '皆', '皆さん', 'みなさん', '一同', '両者', '双方',
+  '一人', '二人', '三人', '四人', '五人', '六人', '七人', '八人', '九人', '十人',
+  '観客', '群衆', 'モブ', 'その他', '客',
+  'ナレーション', 'ナレーター', 'モノローグ', '独白', '地の文',
+])
 
 interface RawBeat {
   speaker: string | null
@@ -113,12 +126,14 @@ export function analyzeScriptHeuristically(text: string): ScriptAnalysis {
     speakerCounts.set(canonical, (speakerCounts.get(canonical) ?? 0) + 1)
   }
 
-  // 頻度フィルタ: 1回しか出現せず、かつ高信頼度パターンでの検出でもない名前は
-  // 誤検出とみなして地の文へ格下げする
+  // 頻度フィルタ + 集団ラベル除外: 名寄せ後も2回以上出現しない名前は誤検出
+  // (見出しや章タイトルなど)とみなし地の文へ格下げする。個人を指さない集団
+  // ラベル(「全員」等)は出現回数に関わらずキャラクター扱いから外す。
   const finalBeats = beats.map((beat) => {
     if (!beat.speaker) return { speaker: null, text: beat.text }
 
     const canonical = canonicalByRawName.get(beat.speaker)!
+    if (NON_PERSON_LABELS.has(canonical)) return { speaker: null, text: beat.text }
     const isReliable = (speakerCounts.get(canonical) ?? 0) >= 2
     return isReliable ? { speaker: canonical, text: beat.text } : { speaker: null, text: beat.text }
   })
