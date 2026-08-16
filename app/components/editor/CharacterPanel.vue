@@ -25,6 +25,37 @@ const filteredCharacters = computed(() => {
   return chars.filter((c) => c.name.toLowerCase().includes(q) || (c.notes ?? '').toLowerCase().includes(q))
 })
 
+/** #rrggbb / #rgb を { r, g, b } に変換する。 */
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  const clean = hex.replace('#', '').trim()
+  const full = clean.length === 3 ? clean.split('').map((c) => c + c).join('') : clean
+  if (full.length !== 6) return null
+  const r = parseInt(full.slice(0, 2), 16)
+  const g = parseInt(full.slice(2, 4), 16)
+  const b = parseInt(full.slice(4, 6), 16)
+  if ([r, g, b].some(Number.isNaN)) return null
+  return { r, g, b }
+}
+
+/**
+ * このキャラの色が他のキャラと近すぎる(名前バッジで区別しにくい)場合、
+ * 衝突相手を返す。RGB空間で単純なユークリッド距離、閾値60。
+ */
+function conflictingCharacter(target: { id: string; color?: string }): { name: string; color: string } | null {
+  const targetRgb = hexToRgb(target.color ?? '')
+  if (!targetRgb) return null
+  for (const other of store.project?.characters ?? []) {
+    if (other.id === target.id) continue
+    const rgb = hexToRgb(other.color ?? '')
+    if (!rgb) continue
+    const d = Math.sqrt(
+      (targetRgb.r - rgb.r) ** 2 + (targetRgb.g - rgb.g) ** 2 + (targetRgb.b - rgb.b) ** 2,
+    )
+    if (d < 60) return { name: other.name, color: other.color ?? '' }
+  }
+  return null
+}
+
 // TTS 音声の一覧(プロジェクト tts 設定から取得)
 const ttsVoices = ref<TtsVoice[]>([])
 
@@ -208,6 +239,11 @@ onUnmounted(() => {
           <img v-if="character.imageDataUrl" class="character-thumb" :src="character.imageDataUrl" alt="A">
           <img v-if="character.imageAltDataUrl" class="character-thumb character-thumb--alt" :src="character.imageAltDataUrl" alt="B">
           <span class="character-swatch" :style="{ background: character.color ?? '#8ec5ff' }" />
+          <span
+            v-if="conflictingCharacter(character)"
+            class="character-color-warning"
+            :title="`他のキャラ「${conflictingCharacter(character)?.name}」と色が近すぎます`"
+          >⚠️</span>
           <span class="character-name">{{ character.name }}</span>
 
           <div class="character-asset-actions">

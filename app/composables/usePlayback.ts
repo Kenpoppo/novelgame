@@ -23,7 +23,16 @@ export function usePlayback(script: ParsedScript, ttsConfig?: TtsConfig) {
   const activeSide = ref<'left' | 'right' | null>(null)
   const backgroundImage = ref<string | null>(null)
 
+  // ポーズメニューから調整する音量/読み上げ速度。
+  const bgmVolume = ref(0.7)
+  const seVolume = ref(0.9)
+  const ttsRateMultiplier = ref(1)
+
   const audio = new HowlerAudioService()
+  audio.setBgmVolume(bgmVolume.value)
+  audio.setSeVolume(seVolume.value)
+  watch(bgmVolume, (v) => audio.setBgmVolume(v))
+  watch(seVolume, (v) => audio.setSeVolume(v))
 
   // 発話中のボイスファイル(Audio)。次の発話で停止する。
   let voiceAudio: HTMLAudioElement | null = null
@@ -61,9 +70,10 @@ export function usePlayback(script: ParsedScript, ttsConfig?: TtsConfig) {
       } else if (tts) {
         const shouldSpeak = payload.characterId !== null || ttsConfig?.narrateNarration !== false
         if (shouldSpeak && payload.text.trim().length > 0) {
+          const baseRate = payload.ttsRate ?? (payload.characterId === null ? ttsConfig?.narrationRate : undefined) ?? 1
           void tts.speak(payload.text, {
             voice: payload.ttsVoice ?? (payload.characterId === null ? ttsConfig?.narrationVoice : undefined),
-            rate: payload.ttsRate ?? (payload.characterId === null ? ttsConfig?.narrationRate : undefined),
+            rate: baseRate * ttsRateMultiplier.value,
             pitch: payload.ttsPitch ?? (payload.characterId === null ? ttsConfig?.narrationPitch : undefined),
           })
         }
@@ -155,6 +165,9 @@ export function usePlayback(script: ParsedScript, ttsConfig?: TtsConfig) {
     rightSlot,
     activeSide,
     backgroundImage,
+    bgmVolume,
+    seVolume,
+    ttsRateMultiplier,
     start,
     advance,
     back,

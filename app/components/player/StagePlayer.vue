@@ -118,6 +118,25 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
     <div v-if="paused" class="stage-pause-overlay" @click.self="togglePause">
       <div class="stage-pause-panel">
         <h2>一時停止</h2>
+
+        <div class="stage-pause-sliders">
+          <label class="stage-pause-slider">
+            <span>BGM 音量</span>
+            <input v-model.number="playback.bgmVolume.value" type="range" min="0" max="1" step="0.05">
+            <span class="stage-pause-slider-value">{{ Math.round(playback.bgmVolume.value * 100) }}%</span>
+          </label>
+          <label class="stage-pause-slider">
+            <span>SE 音量</span>
+            <input v-model.number="playback.seVolume.value" type="range" min="0" max="1" step="0.05">
+            <span class="stage-pause-slider-value">{{ Math.round(playback.seVolume.value * 100) }}%</span>
+          </label>
+          <label v-if="tts?.enabled" class="stage-pause-slider">
+            <span>読み上げ速度</span>
+            <input v-model.number="playback.ttsRateMultiplier.value" type="range" min="0.5" max="2" step="0.1">
+            <span class="stage-pause-slider-value">{{ playback.ttsRateMultiplier.value.toFixed(1) }}x</span>
+          </label>
+        </div>
+
         <button type="button" class="publish-button" @click="togglePause">続ける (Esc)</button>
         <button type="button" class="io-button" @click="goHome">
           {{ homeTo === '/editor' ? '編集画面へ戻る' : 'ホーム(ギャラリー)へ戻る' }}

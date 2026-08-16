@@ -436,6 +436,11 @@
   flex-shrink: 0;
 }
 
+.character-color-warning {
+  font-size: 14px;
+  cursor: help;
+}
+
 .character-name,
 .audio-label {
   flex: 1;

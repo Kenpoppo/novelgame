@@ -52,21 +52,26 @@ async function setImage(bg: BackgroundAsset, event: Event): Promise<void> {
 
 <template>
   <section class="panel">
-    <h2>背景ライブラリ</h2>
+    <h2>背景ライブラリ <span class="beat-count">({{ store.project?.backgrounds?.length ?? 0 }}件)</span></h2>
     <p class="hint">
-      場面ごとに切り替えたい背景画像を登録します。ストーリー内で「+ 背景」ビートを
-      追加して切り替えます。未添付でも執筆は進められます。
+      場面ごとに切り替えたい背景画像を登録します。台詞ビートの「背景」ドロップダウンで
+      切り替えます。未添付でも執筆は進められます。
     </p>
 
-    <ul class="audio-list">
-      <li v-for="bg in store.project?.backgrounds ?? []" :key="bg.id" class="audio-item">
-        <img v-if="bg.imageDataUrl" class="bg-thumb" :src="bg.imageDataUrl" alt="">
-        <span class="audio-label">{{ bg.label }}</span>
-        <label class="character-asset-button">
-          {{ bg.imageDataUrl ? '画像を変更' : '画像を設定' }}
-          <input type="file" accept="image/*" hidden @change="setImage(bg, $event)">
-        </label>
-        <button type="button" @click="removeBackground(bg.id)">削除</button>
+    <ul class="bg-grid">
+      <li v-for="bg in store.project?.backgrounds ?? []" :key="bg.id" class="bg-grid-item">
+        <div class="bg-grid-thumb-wrap">
+          <img v-if="bg.imageDataUrl" class="bg-grid-thumb" :src="bg.imageDataUrl" alt="">
+          <span v-else class="bg-grid-placeholder">画像未設定</span>
+        </div>
+        <span class="bg-grid-label">{{ bg.label }}</span>
+        <div class="bg-grid-actions">
+          <label class="character-asset-button">
+            {{ bg.imageDataUrl ? '変更' : '設定' }}
+            <input type="file" accept="image/*" hidden @change="setImage(bg, $event)">
+          </label>
+          <button type="button" class="character-asset-clear" @click="removeBackground(bg.id)">削除</button>
+        </div>
       </li>
     </ul>
 
@@ -79,11 +84,60 @@ async function setImage(bg: BackgroundAsset, event: Event): Promise<void> {
 </template>
 
 <style scoped>
-.bg-thumb {
-  width: 48px;
-  height: 32px;
-  object-fit: cover;
+.bg-grid {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.bg-grid-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  background: #fbfaf6;
+  border: 2px solid var(--pop-ink);
+  border-radius: var(--pop-radius-sm);
+}
+
+.bg-grid-thumb-wrap {
+  aspect-ratio: 16 / 10;
   border: 2px solid var(--pop-ink);
   border-radius: 6px;
+  overflow: hidden;
+  background: #efe9dd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bg-grid-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.bg-grid-placeholder {
+  font-size: 11px;
+  font-weight: 700;
+  color: #8a7c6c;
+}
+
+.bg-grid-label {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--pop-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bg-grid-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 </style>
