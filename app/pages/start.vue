@@ -255,6 +255,7 @@ function backTo(target: Step): void {
   <div class="wizard">
     <!-- Step 1: タイトル画面 -->
     <section v-if="step === 'title'" class="wizard-hero">
+      <img class="wizard-hero-mascot" src="/usagiicon1.png" alt="ヘッドホンウサギ">
       <h1>ノベルゲームメーカー</h1>
       <p class="wizard-hero-lead">
         キャラクター、背景、セリフを組み合わせて<br>
@@ -262,6 +263,7 @@ function backTo(target: Step): void {
       </p>
       <button type="button" class="wizard-hero-cta" @click="begin">はじめる →</button>
       <NuxtLink to="/editor" class="wizard-skip">既存の編集を続ける →</NuxtLink>
+      <p class="wizard-hero-credit">🐰 by ヘッドホンウサギ</p>
     </section>
 
     <!-- Step 2: モード選択 -->
@@ -399,10 +401,15 @@ function backTo(target: Step): void {
     <!-- Step 4: 完了 -->
     <section v-else-if="step === 'done'" class="wizard-body">
       <WizardStepBar :current="4" />
-      <h2>✨ 基本セットアップ完了!</h2>
-      <p class="wizard-hint">
-        続けて、より詳しくカスタマイズしましょう。あとから何度でも編集できます。
-      </p>
+      <div class="wizard-done-hero">
+        <img class="wizard-done-mascot" src="/usagiicon1.png" alt="">
+        <div>
+          <h2>✨ 基本セットアップ完了!</h2>
+          <p class="wizard-hint">
+            続けて、より詳しくカスタマイズしましょう。あとから何度でも編集できます。
+          </p>
+        </div>
+      </div>
       <div class="wizard-done-actions">
         <button type="button" class="wizard-primary" @click="goEditor">詳細を編集する</button>
         <button type="button" class="wizard-secondary" @click="goPreview">今すぐプレビュー</button>
@@ -430,7 +437,27 @@ function backTo(target: Step): void {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 24px;
+  gap: 20px;
+}
+
+.wizard-hero-mascot {
+  width: min(180px, 40vw);
+  height: auto;
+  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.18));
+  animation: mascot-bob 2.5s ease-in-out infinite;
+}
+
+@keyframes mascot-bob {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-8px) rotate(2deg); }
+}
+
+.wizard-hero-credit {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #6b5f52;
+  opacity: 0.7;
 }
 
 .wizard-hero h1 {
@@ -800,6 +827,20 @@ function backTo(target: Step): void {
 }
 
 /* ── 完了 ─────────────────────────── */
+.wizard-done-hero {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.wizard-done-mascot {
+  width: 96px;
+  height: auto;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
+  animation: mascot-bob 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
 .wizard-done-actions {
   display: flex;
   flex-direction: column;

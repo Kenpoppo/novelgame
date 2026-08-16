@@ -117,6 +117,7 @@ async function onImportFile(event: Event): Promise<void> {
 <template>
   <div v-if="store.project" class="editor">
     <header class="editor-header">
+      <img class="editor-mascot" src="/usagiicon1.png" alt="">
       <input v-model="store.project.title" type="text" class="title-input" placeholder="タイトル">
       <NuxtLink to="/">ギャラリー</NuxtLink>
       <button type="button" class="io-button" title="プロジェクトをJSONファイルとして書き出す" @click="exportProject">

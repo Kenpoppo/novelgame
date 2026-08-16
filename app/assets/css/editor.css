@@ -16,6 +16,13 @@
   z-index: 1;
 }
 
+.editor-mascot {
+  width: 48px;
+  height: auto;
+  flex-shrink: 0;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.15));
+}
+
 .title-input {
   flex: 1;
   font-size: 20px;
@@ -900,6 +907,32 @@
   margin: 0 0 24px;
   font-size: 28px;
   font-weight: 900;
+}
+
+.gallery-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.gallery-header h1 {
+  margin: 0;
+}
+
+.gallery-mascot {
+  width: 64px;
+  height: auto;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.15));
+}
+
+.gallery-footer {
+  margin: 60px 0 20px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #6b5f52;
+  opacity: 0.6;
+  text-align: center;
 }
 
 .gallery-intro {

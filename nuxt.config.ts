@@ -9,8 +9,8 @@ export default defineNuxtConfig({
   app: {
     head: {
       link: [
-        { rel: 'icon', type: 'image/jpeg', href: '/icon.jpg' },
-        { rel: 'apple-touch-icon', href: '/icon.jpg' },
+        { rel: 'icon', type: 'image/png', href: '/usagiicon1.png' },
+        { rel: 'apple-touch-icon', href: '/usagiicon1.png' },
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
         {
