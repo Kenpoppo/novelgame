@@ -7,10 +7,11 @@ import type { ScriptAnalysis } from './scriptImport'
  * 出現頻度でふるい落とす方針をとる。
  *
  * 対応パターン:
- *   1. 名前だけの行 + 次の行が「セリフ」の2行構成(実際の台本で最も多い形式)
- *   2. 同一行の「名前: セリフ」「名前「セリフ」」
- *   3. 名前の再掲がなく「セリフ」だけが連続する行(直前の話者の続きとみなす)
- *   4. 上記いずれにも当てはまらない行は地の文として扱う
+ *   1. 名前だけの行 + 次の行が「セリフ」または（心の声）の2行構成(最も多い形式)
+ *   2. 「名前1、名前2」のような複数名の行 + 次の行のセリフ/心の声を全員分に付与
+ *   3. 同一行の「名前: セリフ」「名前「セリフ」」
+ *   4. 名前の再掲がなく「セリフ」「（心の声）」だけが連続する行(直前の話者の続き)
+ *   5. 上記いずれにも当てはまらない行は地の文として扱う
  *
  * 精度対策(実サンプルでの検証結果を踏まえたもの):
  *   - 敬称・役職の名寄せ: 「たかし」と「たかし刑事」のように同一人物が
@@ -20,11 +21,17 @@ import type { ScriptAnalysis } from './scriptImport'
  *     章タイトルの誤検出であることが多い)とみなし地の文へ格下げする。
  *   - 集団ラベル除外: 「全員」「みんな」「一同」等は個人を指さない指示語
  *     なのでキャラクターとして扱わず、その行はナレーションへ格下げする。
+ *   - 「心の声」(全角/半角括弧で囲まれた独白)は「」と同格の発話として、
+ *     直前の名前行または話者引き継ぎで本人のセリフに紐づける。
  */
 
 const NAME_ONLY_LINE = /^([^\s:：「」『』。、！？…〜を]{1,12})(?:[(（][^)）]*[)）])?$/
 const SAME_LINE_COLON = /^([^\s:：]{1,12})[:：]\s*(.+)$/
 const SAME_LINE_QUOTE = /^([^\s「『]{1,12})[「『](.+)[」』]$/
+// 「名前1、名前2」「名前1&名前2」などの複数名前指定の分割セパレータ
+const MULTI_NAME_SEPARATOR = /[、,・&＆]/
+// 分割後の各パーツが名前として妥当かどうかを判定するトークン
+const MULTI_NAME_TOKEN = /^[^\s:：「」『』（）(){}【】。！？…〜を、,・&＆]{1,12}$/
 
 // 敬称・呼称・よくある役職の接尾辞。長いものから優先的に判定する。
 const NAME_SUFFIXES = [
@@ -120,6 +127,42 @@ export function analyzeScriptHeuristically(text: string): ScriptAnalysis {
     return null
   }
 
+  /**
+   * 全角/半角括弧 `（〜）` `(〜)` で1行にまとまった「心の声」を1つのセリフとして
+   * 取り出す。表示上「地の文」と区別しやすいよう、括弧を残したまま返す
+   * (「」は剥がすが、`（）` は独白マーカーとして視認できるようにする)。
+   */
+  const consumeThoughtFrom = (start: number): { text: string; endIndex: number } | null => {
+    const line = lines[start]
+    if (!line) return null
+    const m = line.match(/^[（(](.+?)[）)]\s*$/)
+    if (!m) return null
+    return { text: `（${m[1]}）`, endIndex: start }
+  }
+
+  /**
+   * 発話行(「」の引用または（）の心の声)を、始点位置から1つ取り出す。
+   * どちらでもなければ null。
+   */
+  const consumeSpeechFrom = (start: number): { text: string; endIndex: number } | null => {
+    return consumeQuoteFrom(start) ?? consumeThoughtFrom(start)
+  }
+
+  /**
+   * 「しゅうへい、なつみ」のように複数キャラを `、,・&＆` で並べた行から
+   * キャラ名の配列を返す。単一の名前や、名前ではない語が混じる場合は null。
+   */
+  const extractMultipleSpeakers = (line: string): string[] | null => {
+    if (!MULTI_NAME_SEPARATOR.test(line)) return null
+    const parts = line
+      .split(MULTI_NAME_SEPARATOR)
+      .map((p) => p.trim())
+      .filter((p) => p.length > 0)
+    if (parts.length < 2) return null
+    if (!parts.every((p) => MULTI_NAME_TOKEN.test(p))) return null
+    return parts
+  }
+
   let lastSpeaker: string | null = null
   let i = 0
   while (i < lines.length) {
@@ -132,23 +175,44 @@ export function analyzeScriptHeuristically(text: string): ScriptAnalysis {
       continue
     }
 
-    // 1. 名前だけの行 + 次の非空行が「セリフ」(空行を跨いで良い)
+    // 1. 名前だけの行 + 次の非空行が「セリフ」または（心の声）
     const nameOnlyMatch = line.match(NAME_ONLY_LINE)
     if (nameOnlyMatch) {
       const nextIdx = findNextNonEmpty(i + 1)
       if (nextIdx >= 0) {
-        const quote = consumeQuoteFrom(nextIdx)
-        if (quote) {
+        const speech = consumeSpeechFrom(nextIdx)
+        if (speech) {
           const speaker = nameOnlyMatch[1]!
-          beats.push({ speaker, text: quote.text })
+          beats.push({ speaker, text: speech.text })
           lastSpeaker = speaker
-          i = quote.endIndex + 1
+          i = speech.endIndex + 1
           continue
         }
       }
     }
 
-    // 2. 同一行「名前: セリフ」「名前「セリフ」」
+    // 2. 複数名の行「しゅうへい、なつみ」+ 次の非空行の発話 → 各キャラに同じセリフを付与
+    if (!nameOnlyMatch) {
+      const multiSpeakers = extractMultipleSpeakers(line)
+      if (multiSpeakers) {
+        const nextIdx = findNextNonEmpty(i + 1)
+        if (nextIdx >= 0) {
+          const speech = consumeSpeechFrom(nextIdx)
+          if (speech) {
+            for (const speaker of multiSpeakers) {
+              beats.push({ speaker, text: speech.text })
+            }
+            // 複数名の場合は誰の続きかが曖昧なので、次以降の心の声/セリフを
+            // 自動で引き継がせない(意図しない発話者に紐づくのを防ぐ)。
+            lastSpeaker = null
+            i = speech.endIndex + 1
+            continue
+          }
+        }
+      }
+    }
+
+    // 3. 同一行「名前: セリフ」「名前「セリフ」」
     const sameLineMatch = line.match(SAME_LINE_COLON) ?? line.match(SAME_LINE_QUOTE)
     if (sameLineMatch) {
       const speaker = sameLineMatch[1]!
@@ -158,27 +222,27 @@ export function analyzeScriptHeuristically(text: string): ScriptAnalysis {
       continue
     }
 
-    // 3. 名前の再掲なしで続く「セリフ」だけの行 → 直前の話者の続き
+    // 4. 名前の再掲なしで続く「セリフ」または（心の声）→ 直前の話者の続き
     //    複数行に渡る引用にも対応する(閉じ記号までを1つのセリフに結合)。
     if (lastSpeaker) {
-      const quote = consumeQuoteFrom(i)
-      if (quote) {
-        beats.push({ speaker: lastSpeaker, text: quote.text })
-        i = quote.endIndex + 1
+      const speech = consumeSpeechFrom(i)
+      if (speech) {
+        beats.push({ speaker: lastSpeaker, text: speech.text })
+        i = speech.endIndex + 1
         continue
       }
     }
 
-    // 4. 話者を持たない引用(ナレーション中の声・ラジオの音声など)も
-    //    複数行にまたがる場合は1つの地の文としてまとめる。
-    const orphanQuote = consumeQuoteFrom(i)
-    if (orphanQuote) {
-      beats.push({ speaker: null, text: orphanQuote.text })
-      i = orphanQuote.endIndex + 1
+    // 5. 話者を持たない引用(ナレーション中の声・ラジオの音声など)や
+    //    孤立した（心の声）を地の文として取り出す。
+    const orphan = consumeSpeechFrom(i)
+    if (orphan) {
+      beats.push({ speaker: null, text: orphan.text })
+      i = orphan.endIndex + 1
       continue
     }
 
-    // 5. どれにも当てはまらない行は地の文
+    // 6. どれにも当てはまらない行は地の文
     beats.push({ speaker: null, text: line })
     i++
   }
