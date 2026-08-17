@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ParsedScript } from '#shared/domain/types'
 import type { TtsConfig } from '#shared/domain/project/types'
+import type { VMSaveState } from '#shared/domain/vm'
 
 const props = defineProps<{
   title: string
@@ -8,16 +9,83 @@ const props = defineProps<{
   tts?: TtsConfig
   // ホームボタン押下時の遷移先。プレビュー中(/play/local)は /editor に戻すため。
   homeTo?: string
+  // localStorage に保存する再開位置のキー。プロジェクト/公開作品ごとに一意に指定する。
+  // 省略時は保存/再開機能を無効化する。
+  saveKey?: string
 }>()
+
+const SAVE_KEY_PREFIX = 'novelgame:play-save:'
+const savedState = ref<VMSaveState | null>(null)
+
+function readSave(): VMSaveState | null {
+  if (!props.saveKey || typeof localStorage === 'undefined') return null
+  try {
+    const raw = localStorage.getItem(SAVE_KEY_PREFIX + props.saveKey)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as VMSaveState
+    if (typeof parsed?.pointer !== 'number' || !Array.isArray(parsed.history)) return null
+    return parsed
+  } catch {
+    return null
+  }
+}
+
+function writeSave(state: VMSaveState): void {
+  if (!props.saveKey || typeof localStorage === 'undefined') return
+  try {
+    localStorage.setItem(SAVE_KEY_PREFIX + props.saveKey, JSON.stringify(state))
+  } catch {
+    // 容量超過など。ここでは黙って諦める(次回はセーブなしで最初から始まるだけ)。
+  }
+}
+
+function clearSave(): void {
+  if (!props.saveKey || typeof localStorage === 'undefined') return
+  try {
+    localStorage.removeItem(SAVE_KEY_PREFIX + props.saveKey)
+  } catch {
+    // ignore
+  }
+}
 
 const started = ref(false)
 const paused = ref(false)
-const playback = usePlayback(props.script, props.tts)
+const playback = usePlayback(props.script, props.tts, {
+  onProgress(state) {
+    // dialogueへ進むたびに現在位置を記録する。
+    savedState.value = state
+    writeSave(state)
+  },
+})
 const router = useRouter()
 
+// 初期表示時に既存のセーブを読み込む(タイトル画面の「続きから」ボタンの出し分けに使う)。
+onMounted(() => {
+  savedState.value = readSave()
+})
+
 function handleStart(): void {
+  // 「最初から」を押されたら過去のセーブは破棄する。
+  clearSave()
+  savedState.value = null
   started.value = true
   playback.start()
+}
+
+function handleResume(): void {
+  const state = savedState.value
+  if (!state) {
+    handleStart()
+    return
+  }
+  started.value = true
+  const ok = playback.resume(state)
+  if (!ok) {
+    // スクリプトが変わって範囲外になった等。セーブを捨てて最初から始め直す。
+    clearSave()
+    savedState.value = null
+    playback.start()
+  }
 }
 
 function togglePause(): void {
@@ -27,6 +95,14 @@ function togglePause(): void {
 function goHome(): void {
   router.push(props.homeTo ?? '/')
 }
+
+// ゲーム終了時は再開する場所がないのでセーブを消しておく。
+watch(() => playback.ended.value, (isEnded) => {
+  if (isEnded) {
+    clearSave()
+    savedState.value = null
+  }
+})
 
 function handleKeydown(event: KeyboardEvent): void {
   if (!started.value) return
@@ -49,7 +125,7 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
 </script>
 
 <template>
-  <TitleScreen v-if="!started" :title="title" @start="handleStart" />
+  <TitleScreen v-if="!started" :title="title" :has-save="!!savedState" @start="handleStart" @resume="handleResume" />
   <div
     v-else
     class="stage"
@@ -131,11 +207,22 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
             <input v-model.number="playback.seVolume.value" type="range" min="0" max="1" step="0.05">
             <span class="stage-pause-slider-value">{{ Math.round(playback.seVolume.value * 100) }}%</span>
           </label>
-          <label v-if="tts?.enabled" class="stage-pause-slider">
-            <span>読み上げ速度</span>
-            <input v-model.number="playback.ttsRateMultiplier.value" type="range" min="0.5" max="2" step="0.1">
-            <span class="stage-pause-slider-value">{{ playback.ttsRateMultiplier.value.toFixed(1) }}x</span>
+          <label class="stage-pause-slider">
+            <span>再生速度</span>
+            <input v-model.number="playback.playbackSpeed.value" type="range" min="0.5" max="2" step="0.1">
+            <span class="stage-pause-slider-value">{{ playback.playbackSpeed.value.toFixed(1) }}x</span>
           </label>
+        </div>
+
+        <div class="stage-pause-speed-presets" role="group" aria-label="再生速度プリセット">
+          <button
+            v-for="preset in [1, 1.5, 2]"
+            :key="preset"
+            type="button"
+            class="stage-pause-speed-preset"
+            :class="{ 'stage-pause-speed-preset--active': playback.playbackSpeed.value === preset }"
+            @click="playback.playbackSpeed.value = preset"
+          >{{ preset.toFixed(1) }}x</button>
         </div>
 
         <label class="stage-pause-toggle">

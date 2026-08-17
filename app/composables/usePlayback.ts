@@ -3,6 +3,7 @@ import { VoicevoxTts } from '../../infrastructure/tts/voicevoxTts'
 import { WebSpeechTts } from '../../infrastructure/tts/webspeechTts'
 import type { TtsService } from '../../infrastructure/tts/ttsService'
 import { ScriptVM } from '#shared/domain/vm'
+import type { VMSaveState } from '#shared/domain/vm'
 import type { ParsedScript } from '#shared/domain/types'
 import type { TtsConfig } from '#shared/domain/project/types'
 
@@ -11,7 +12,12 @@ interface PortraitSlot {
   imageDataUrl: string
 }
 
-export function usePlayback(script: ParsedScript, ttsConfig?: TtsConfig) {
+export interface UsePlaybackOptions {
+  // dialogue へ進むたびに呼ばれる。セーブ用に現在位置を保存するのに使う。
+  onProgress?: (state: VMSaveState) => void
+}
+
+export function usePlayback(script: ParsedScript, ttsConfig?: TtsConfig, options: UsePlaybackOptions = {}) {
   const speakerName = ref<string | null>(null)
   const speakerColor = ref<string | undefined>(undefined)
   const text = ref('')
@@ -26,7 +32,8 @@ export function usePlayback(script: ParsedScript, ttsConfig?: TtsConfig) {
   // ポーズメニューから調整する音量/読み上げ速度。
   const bgmVolume = ref(0.7)
   const seVolume = ref(0.9)
-  const ttsRateMultiplier = ref(1)
+  // ボイスファイルの再生速度とTTS読み上げ速度に共通で掛ける倍率。
+  const playbackSpeed = ref(1)
   // ボイス(TTS/ボイスファイル)の再生が終わったら自動で次のセリフへ進める。
   const autoAdvanceOnVoiceEnd = ref(false)
 
@@ -35,6 +42,10 @@ export function usePlayback(script: ParsedScript, ttsConfig?: TtsConfig) {
   audio.setSeVolume(seVolume.value)
   watch(bgmVolume, (v) => audio.setBgmVolume(v))
   watch(seVolume, (v) => audio.setSeVolume(v))
+  // 再生中のボイスファイルにも即時反映する(次のセリフを待たずに切り替わる)。
+  watch(playbackSpeed, (v) => {
+    if (voiceAudio) voiceAudio.playbackRate = v
+  })
 
   // 発話中のボイスファイル(Audio)。次の発話で停止する。
   let voiceAudio: HTMLAudioElement | null = null
@@ -74,12 +85,15 @@ export function usePlayback(script: ParsedScript, ttsConfig?: TtsConfig) {
       speakerName.value = payload.name
       speakerColor.value = payload.color
       text.value = payload.text
+      // このdialogueに到達したことを外部へ通知(セーブ用)。
+      options.onProgress?.(vm.getState())
 
       // 発話再生: 既存ボイスファイル > TTS > 何もしない
       stopVoice()
       const myGeneration = voiceGeneration
       if (payload.voiceDataUrl) {
         const a = new Audio(payload.voiceDataUrl)
+        a.playbackRate = playbackSpeed.value
         voiceAudio = a
         a.addEventListener('ended', () => handleVoiceFinished(myGeneration))
         a.addEventListener('error', () => handleVoiceFinished(myGeneration))
@@ -93,7 +107,7 @@ export function usePlayback(script: ParsedScript, ttsConfig?: TtsConfig) {
           void tts
             .speak(payload.text, {
               voice: payload.ttsVoice ?? (payload.characterId === null ? ttsConfig?.narrationVoice : undefined),
-              rate: baseRate * ttsRateMultiplier.value,
+              rate: baseRate * playbackSpeed.value,
               pitch: payload.ttsPitch ?? (payload.characterId === null ? ttsConfig?.narrationPitch : undefined),
             })
             .then(() => handleVoiceFinished(myGeneration))
@@ -156,6 +170,14 @@ export function usePlayback(script: ParsedScript, ttsConfig?: TtsConfig) {
     vm.start()
   }
 
+  function resume(state: VMSaveState): boolean {
+    return vm.restore(state)
+  }
+
+  function getSaveState(): VMSaveState {
+    return vm.getState()
+  }
+
   function advance(): void {
     vm.advance()
   }
@@ -188,11 +210,13 @@ export function usePlayback(script: ParsedScript, ttsConfig?: TtsConfig) {
     backgroundImage,
     bgmVolume,
     seVolume,
-    ttsRateMultiplier,
+    playbackSpeed,
     autoAdvanceOnVoiceEnd,
     start,
     advance,
     back,
     choose,
+    resume,
+    getSaveState,
   }
 }

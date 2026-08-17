@@ -21,6 +21,11 @@ export interface VMCallbacks {
   onEnd(): void
 }
 
+export interface VMSaveState {
+  pointer: number
+  history: number[]
+}
+
 export class ScriptVM {
   private readonly script: ParsedScript
   private readonly callbacks: VMCallbacks
@@ -35,6 +40,27 @@ export class ScriptVM {
 
   start(): void {
     this.run()
+  }
+
+  /**
+   * 現在の実行位置(pointer + history)をセーブ用にダンプする。
+   * 次回この状態を restore() すればその dialogue から続きを再生できる。
+   */
+  getState(): VMSaveState {
+    return { pointer: this.pointer, history: [...this.history] }
+  }
+
+  /**
+   * getState() の結果から実行位置を復元し、その dialogue を再描画する。
+   * 復元先の命令が range 外なら false を返して開始しない(スクリプトが変わって
+   * オフセットがずれた場合の保険)。
+   */
+  restore(state: VMSaveState): boolean {
+    if (state.pointer < 0 || state.pointer >= this.script.instructions.length) return false
+    this.pointer = state.pointer
+    this.history = [...state.history]
+    this.run()
+    return true
   }
 
   advance(): void {
